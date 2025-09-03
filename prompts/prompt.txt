@@ -42,42 +42,38 @@ Aturan Emas untuk Mengatasi Ambiguitas
 1. Fokus Utama: Tanyakan, "Apakah tweet ini relevan dengan universitas tertentu dan menyampaikan emosi positif, negatif, atau informasi netral? Apakah ada indikasi buzzer?" Jika tidak ada kaitan dengan universitas, labeli sebagai TIDAK RELEVAN.
 2. Spesifik vs. Umum: Pilih kategori yang paling sesuai berdasarkan isi dan relevansi tweet. Jika tweet mengandung sentimen tetapi tidak relevan dengan universitas (misal, "Pelayanan buruk banget!" tanpa menyebut kampus), klasifikasikan sebagai TIDAK RELEVAN. Tandai pola buzzer jika terdeteksi.
 
-Instruksi Pelabelan
-- Jumlah Data: Labeli {len(texts)} tweet yang diberikan.
-- Format Output:
-- Gunakan format: LABEL KATEGORI - Justifikasi [Alasan singkat untuk label dan skor. Catatan: TERINDIKASI BUZZER jika ada pola promosi, hashtag berlebihan, atau aktivitas mencurigakan].
-- Contoh:
-1. POSITIF - Tweet memuji acara wisuda [Nama Kampus] dengan nada gembira. Skor tinggi karena sentimen positif dan relevansi jelas.
-2. TIDAK RELEVAN - Tweet mengandung pujian tetapi tidak menyebut universitas tertentu. Catatan: TERINDIKASI BUZZER karena penggunaan hashtag promosi berulang (#KampusTerbaik).
-
 Contoh Tambahan untuk Klarifikasi
 1. Tweet: "Selamat buat [Nama Kampus] atas akreditasi A, bikin bangga alumni! #KampusTerbaik"
 - Label: POSITIF
-- Justifikasi: Tweet mengandung ucapan selamat dan ekspresi kebanggaan terkait [Nama Kampus]. Skor agak rendah karena hashtag #KampusTerbaik mungkin menunjukkan promosi. Catatan: TERINDIKASI BUZZER karena hashtag promosi.
+- Justifikasi: Tweet mengandung ucapan selamat dan ekspresi kebanggaan terkait [Nama Kampus]. Catatan: TERINDIKASI BUZZER karena hashtag promosi.
 2. Tweet: "Sistem pendaftaran [Nama Kampus] error lagi, parah!"
 - Label: NEGATIF
-- Justifikasi: Tweet mengeluhkan masalah teknis [Nama Kampus] dengan nada kecewa. Skor tinggi karena sentimen negatif dan relevansi jelas.
+- Justifikasi: Tweet mengeluhkan masalah teknis [Nama Kampus] dengan nada kecewa. 
 3. Tweet: "Jadwal kuliah [Nama Kampus] sudah diumumkan di situs resmi."
 - Label: NETRAL
-- Justifikasi: Tweet hanya menyampaikan informasi tanpa emosi atau penilaian, relevan dengan [Nama Kampus]. Skor tinggi karena bersifat informatif.
+- Justifikasi: Tweet hanya menyampaikan informasi tanpa emosi atau penilaian, relevan dengan [Nama Kampus]. 
 4. Tweet: "Acara seru, tapi parkirannya chaos."
 - Label: TIDAK RELEVAN
-- Justifikasi: Tweet mengandung sentimen positif dan negatif tetapi tidak menyebut universitas tertentu. Skor tinggi karena ketidakrelevanan jelas.
+- Justifikasi: Tweet mengandung sentimen positif dan negatif tetapi tidak menyebut universitas tertentu. 
 5. Tweet: "Apa kabar mahasiswa baru [Nama Kampus]?"
 - Label: NETRAL
-- Justifikasi: Tweet berupa pertanyaan tanpa ekspresi emosi, relevan dengan [Nama Kampus]. Skor tinggi karena bersifat netral dan relevan.
+- Justifikasi: Tweet berupa pertanyaan tanpa ekspresi emosi, relevan dengan [Nama Kampus]. 
 6. Tweet: "Gabung [Nama Kampus], universitas nomor satu di Indonesia! #KampusTerbaik"
 - Label: POSITIF
-- Justifikasi: Tweet memuji [Nama Kampus] dengan nada promosi. Skor agak rendah karena bahasa berlebihan. Catatan: TERINDIKASI BUZZER karena penggunaan hashtag promosi dan nada tidak alami.
+- Justifikasi: Tweet memuji [Nama Kampus] dengan nada promosi. Catatan: TERINDIKASI BUZZER karena penggunaan hashtag promosi dan nada tidak alami.
 
 Catatan Tambahan
 - Konteks X: Tweet sering pendek, informal, dan dapat mengandung sarkasme, meme, atau hashtag. Perhatikan konteks ini untuk menentukan sentimen, relevansi, dan indikasi buzzer.
-- Ambiguitas: Jika tweet ambigu (misal, relevansinya tidak jelas, sentimennya tidak tegas, atau ada indikasi buzzer), pilih kategori berdasarkan fokus utama, berikan skor keyakinan lebih rendah, dan jelaskan ambiguitas di justifikasi.
+- Ambiguitas: Jika tweet ambigu (misal, relevansinya tidak jelas, sentimennya tidak tegas, atau ada indikasi buzzer), pilih kategori berdasarkan fokus utama dan jelaskan ambiguitas di justifikasi.
 - Referensi Eksternal: Jika diperlukan, gunakan sumber resmi seperti situs universitas atau Indonesia.go.id untuk memverifikasi fakta, atau analisis profil X untuk mendeteksi pola buzzer (misal, frekuensi posting atau interaksi akun).
 
 Output yang Diinginkan
 Untuk setiap tweet, berikan:
-LABEL KATEGORI - Justifikasi [Alasan singkat untuk label dan skor. Catatan: TERINDIKASI BUZZER jika ada pola promosi, hashtag berlebihan, atau aktivitas mencurigakan].
+LABEL KATEGORI - Justifikasi [Alasan singkat untuk label. Catatan: TERINDIKASI BUZZER jika ada pola promosi, hashtag berlebihan, atau aktivitas mencurigakan].
 Contoh:
-1. POSITIF - Tweet memuji akreditasi [Nama Kampus] dengan nada bangga. Skor tinggi karena sentimen positif dan relevansi sangat jelas.
-Output HARUS berjumlah {len(texts)} baris, sesuai urutan input. Hanya tulis label dan justifikasi (dengan - sebagai pemisah) saja per baris tanpa tambahan teks lain.
+1. POSITIF - Tweet memuji akreditasi [Nama Kampus] dengan nada bangga. 
+Output HARUS berjumlah sesuai urutan input. Hanya tulis label dan justifikasi (dengan - sebagai pemisah) saja per baris tanpa tambahan teks lain.
+
+Teks:
+
+
