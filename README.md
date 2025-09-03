@@ -1,85 +1,59 @@
-# Browser Automation App
+# Auto-Labeling dengan Aistudio
 
-This project automates the process of labeling datasets using the AI Studio platform at aistudio.google.com. The automation script interacts with a dataset in Excel format, sends data for labeling, and updates the dataset with the results.
+Aplikasi ini mengotomatiskan proses pelabelan dataset teks dengan memanfaatkan platform Aistudio dari Google melalui otomatisasi browser. Skrip ini secara cerdas membaca data, berinteraksi dengan antarmuka web Aistudio untuk mendapatkan label, dan menyimpan hasilnya kembali, lengkap dengan logging yang kuat dan penanganan error.
 
-## Browser Automation App
+## ✨ Fitur Utama
 
-This is a Python application for automating browser interactions to interact with Google AI Studio.
+- **Otomatisasi Browser yang Tangguh**: Menggunakan Playwright untuk interaksi yang andal dengan Aistudio.
+- **Logging Berbasis Sesi**: Setiap eksekusi menghasilkan folder log yang unik berisi log teks, screenshot, dan artefak debug lainnya.
+- **Validasi & Retry Cerdas**: Secara otomatis memvalidasi respons dari AI dan mencoba ulang jika terjadi kegagalan.
+- **Dapat Dikonfigurasi**: Perilaku aplikasi dikontrol melalui argumen baris perintah yang jelas.
+- **Alat Bantu CLI**: Dilengkapi dengan seperangkat alat bantu untuk mendiagnosis, memvalidasi, dan memperbaiki file data Anda.
 
-### Features
+## 🚀 Instalasi & Persiapan
 
-- Automated browser interaction with Google AI Studio
-- Excel data processing and management
-- Error handling and recovery
-- Dynamic waiting for response generation
-- Excel file validation and repair tools
+### Prasyarat
 
-## Installation
+- Python 3.8+
+- Google Chrome terinstal
 
-1. Clone this repository
-2. Install dependencies with `pip install -r requirements.txt`
-3. Set up your data file (Excel or CSV)
-4. Run the application with `python main.py`
+### Instalasi
 
-## Excel Utility Tools
+1.  **Clone Repositori**: `git clone <URL_REPOSitori_ANDA>`
+2.  **Buat Lingkungan Virtual**: `python -m venv venv`
+3.  **Aktifkan Lingkungan**:
+    - Windows: `.\venv\Scripts\activate`
+    - macOS/Linux: `source venv/bin/activate`
+4.  **Instal Dependensi**: `pip install -r requirements.txt`
 
-The application comes with several utility tools for working with Excel files:
+### Konfigurasi
 
-### Excel Diagnostics
+1.  **Dataset**: Tempatkan file `.xlsx` atau `.csv` Anda di dalam folder `datasets/`. Pastikan ada kolom bernama `full_text`.
+2.  **Prompt**: Edit file di dalam folder `prompts/` (misalnya `prompt.txt`) dengan instruksi untuk model AI.
 
-Check and diagnose issues with Excel files:
+## 🏃‍♀️ Panduan Lengkap
 
-```powershell
-python tools/excel_utility.py diagnose path/to/your/file.xlsx
-```
+Untuk instruksi yang lebih detail, silakan merujuk ke panduan berikut:
 
-### Excel File Repair
+- **[Panduan Menjalankan Aplikasi Utama](GUIDE_RUNNING.md)**
 
-Attempt to repair corrupted Excel files:
+  - Cara menjalankan proses pelabelan dari awal hingga akhir.
 
-```powershell
-python tools/excel_utility.py repair path/to/your/file.xlsx
-```
+- **[Panduan Menggunakan Alat Bantu Utilitas](GUIDE_TOOLS.md)**
 
-### Check File Lock Status
+  - Cara memvalidasi, memperbaiki, dan mendiagnosis file data Anda.
 
-Check if an Excel file is currently locked by another process:
+- **[Panduan Debugging dan Pemecahan Masalah](GUIDE_DEBUGGING.md)**
 
-```powershell
-python tools/excel_utility.py check-lock path/to/your/file.xlsx
-```
+  - Langkah-langkah untuk diikuti jika Anda mengalami error.
 
-### Validate Excel Structure
+- **[Panduan Menjalankan Tes](GUIDE_TESTING.md)**
+  - Cara memastikan komponen inti aplikasi berfungsi dengan benar.
 
-Validate that Excel file has the correct structure for automation:
+## 🤝 Kontribusi
 
-```powershell
-python tools/validate_excel.py path/to/your/file.xlsx
-```
+Kontribusi sangat diterima! Silakan ajukan _pull request_ atau buka _issue_.
 
-### Fix Excel Structure
+## 📜 Lisensi
 
-Fix issues with Excel file structure for automation compatibility:
-
-```powershell
-python tools/fix_excel_structure.py path/to/your/file.xlsx
-```
-
-Options:
-- `--no-backup` - Don't create a backup file
-- `--remove-extra` - Remove unnecessary columns
-- `--quiet` - Reduce output verbosity
-
-2. **Process Overview:**
-   - The script will read the dataset, extract the required text, and send it to AI Studio for labeling.
-   - It will handle responses, update the dataset with labels and justifications, and verify the results.
-   - If discrepancies are found, the script will retry sending the data.
-   - After every five requests, the script will clear the chat history to optimize memory usage.
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a pull request or open an issue for any enhancements or bug fixes.
-
-## License
-
-This project is licensed under the MIT License. See the LICENSE file for details.
+Proyek ini dilisensikan di bawah Lisensi MIT.
