@@ -189,3 +189,6 @@ pip-selfcheck.json
 
 # Others
 chrome_user_data/
+dummy/
+browser_data/
+logs/
