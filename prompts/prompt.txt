@@ -75,5 +75,3 @@ Contoh:
 Output HARUS berjumlah sesuai urutan input. Hanya tulis label dan justifikasi (dengan - sebagai pemisah) saja per baris tanpa tambahan teks lain.
 
 Teks:
-
-
