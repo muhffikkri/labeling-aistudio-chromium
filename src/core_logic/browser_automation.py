@@ -204,9 +204,16 @@ class Automation:
             try:
                 if self.page.locator(selector).count() > 0:
                     # Ambil teks dari elemen terakhir, karena UI bisa streaming
-                    response = self.page.locator(selector).last.inner_text()
+                    response_element = self.page.locator(selector).last
+                    response = response_element.inner_text()
                     if response.strip():
-                        logging.info(f"Ekstraksi berhasil menggunakan selector: '{selector}'")
+                        # Logging detail tag HTML asal
+                        try:
+                            tag_name = response_element.evaluate("el => el.tagName")
+                            class_name = response_element.evaluate("el => el.className")
+                            logging.info(f"Ekstraksi berhasil menggunakan selector: '{selector}' | tag: {tag_name} | class: {class_name}")
+                        except Exception:
+                            logging.info(f"Ekstraksi berhasil menggunakan selector: '{selector}' | tag info tidak tersedia")
                         return response
             except Exception:
                 continue
@@ -221,13 +228,22 @@ class Automation:
                 });
                 if (elementsWithLabels.length > 0) {
                     elementsWithLabels.sort((a, b) => b.textContent.length - a.textContent.length);
-                    return elementsWithLabels[0].textContent;
+                    // Logging tag dan class
+                    const el = elementsWithLabels[0];
+                    return JSON.stringify({text: el.textContent, tag: el.tagName, class: el.className});
                 }
                 return null;
             }""")
             if response and response.strip():
-                logging.info("Ekstraksi berhasil menggunakan evaluasi JavaScript.")
-                return response
+                try:
+                    resp_obj = None
+                    import json
+                    resp_obj = json.loads(response)
+                    logging.info(f"Ekstraksi berhasil menggunakan evaluasi JavaScript | tag: {resp_obj.get('tag')} | class: {resp_obj.get('class')}")
+                    return resp_obj.get('text')
+                except Exception:
+                    logging.info("Ekstraksi berhasil menggunakan evaluasi JavaScript, info tag tidak tersedia.")
+                    return response
         except Exception as e:
             logging.warning(f"Ekstraksi JavaScript gagal: {e}")
 

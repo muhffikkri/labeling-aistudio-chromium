@@ -35,6 +35,11 @@ def parse_and_validate(raw_response: str | None, expected_count: int) -> Tuple[b
         if not line:
             continue  # Lewati baris kosong
 
+        # # Tracking tag HTML pada setiap baris
+        html_tags = re.findall(r'<([a-zA-Z0-9]+)[^>]*>', line)
+        if html_tags:
+            logging.info(f"Baris mengandung tag HTML: {html_tags} | Baris: '{line}'")
+
         # Coba parsing dengan format utama: "LABEL - Justifikasi"
         parts = line.split(' - ', 1)
         if len(parts) == 2:
