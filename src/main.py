@@ -84,7 +84,7 @@ def main(args):
 
     try:
         # Inisialisasi handler
-        data_handler = DataHandler(input_filepath=args.input_file)
+        data_handler = DataHandler(input_filepath=args.input_file, output_dir=getattr(args, 'output_dir', None))
         failed_handler = FailedRowHandler(log_folder=session_log_path, source_filename_stem=args.input_file.stem)
         browser = Automation(user_data_dir="browser_data", log_folder=session_log_path)
 
@@ -108,13 +108,19 @@ def main(args):
         # Dapatkan dan proses batch
         batches = data_handler.get_data_batches(batch_size=args.batch_size)
         total_batches = len(batches)
+        total_unprocessed_rows = data_handler.get_unprocessed_data_count()
         
         if args.debug:
             logging.warning("MODE DEBUG AKTIF: Hanya akan memproses 1 batch.")
             batches = batches[:1]
 
         for i, batch_data in enumerate(batches):
-            logging.info(f"--- Memproses Batch {i + 1}/{total_batches} (Ukuran: {len(batch_data)} baris) ---")
+            # Hitung expected_count secara dinamis untuk batch terakhir
+            rows_processed_so_far = i * args.batch_size
+            remaining_rows = total_unprocessed_rows - rows_processed_so_far
+            expected_count = min(len(batch_data), remaining_rows)
+            
+            logging.info(f"--- Memproses Batch {i + 1}/{total_batches} (Ukuran: {len(batch_data)} baris, Expected: {expected_count}) ---")
             
             MAX_RETRIES = 3
             validated_results = None
@@ -125,7 +131,7 @@ def main(args):
                 raw_response = browser.get_raw_response_for_batch(full_prompt)
                 is_valid, result = parse_and_validate(
                     raw_response, 
-                    expected_count=len(batch_data), 
+                    expected_count=expected_count, 
                     allowed_labels=allowed_labels_list
                 )
 
@@ -181,6 +187,7 @@ if __name__ == "__main__":
     parser.add_argument("--prompt-file", type=Path, default=Path("prompts/prompt.txt"), help="Path ke file prompt teks.")
     parser.add_argument("--batch-size", type=int, default=50, help="Jumlah baris yang diproses per batch.")
     parser.add_argument("--debug", action="store_true", help="Jalankan dalam mode debug (hanya proses satu batch).")
+    parser.add_argument("--output-dir", type=Path, help="Direktori output khusus untuk menyimpan hasil (opsional).")
     parser.add_argument(
         "--allowed-labels", 
         type=str, 
