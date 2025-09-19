@@ -192,3 +192,6 @@ chrome_user_data/
 dummy/
 browser_data/
 logs/
+results/
+datasets/
+!datasets/data_sample_blank.xlsx
