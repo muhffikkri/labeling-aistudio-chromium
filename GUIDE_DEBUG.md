@@ -1,58 +1,241 @@
-# Panduan Debugging dan Pemecahan Masalah
+# 🔍 Debugging & Troubleshooting Guide
 
-Jika Anda mengalami error, ikuti panduan ini untuk menemukan sumber masalahnya. Filosofi debugging proyek ini adalah: **semua yang Anda butuhkan ada di dalam folder log sesi.**
+When issues occur, follow this systematic debugging approach. **Philosophy**: Everything you need for debugging is contained within the session log folder.
 
----
+## 🚨 Quick Debug Workflow
 
-### Alur Kerja Debugging
+### Step 1: Run in Debug Mode
 
-#### Langkah 1: Jalankan Ulang dalam Mode Debug
-
-Jalankan aplikasi dengan flag `--debug`. Ini akan memproses hanya satu batch dan menghasilkan folder log yang bersih untuk dianalisis.
+Always start troubleshooting with debug mode - it processes only one batch and creates a clean log folder:
 
 ```bash
-python src/main.py --input-file "datasets/nama_file_anda.xlsx" --debug
+python src/main.py --input-file "datasets/your_file.xlsx" --debug
 ```
 
-#### Langkah 2: Temukan Folder Log Sesi
+### Step 2: Locate Session Log Folder
 
-Buka direktori `logs/`. Di dalamnya, Anda akan menemukan folder dengan nama stempel waktu, contoh:
-`2025-09-03_12-00-00`.
-Buka folder terbaru.
+Navigate to `logs/` directory and find the newest timestamped folder (e.g., `2025-09-19_14-30-45`).
 
-#### Langkah 3: Analisis Artefak Debug (Dalam Urutan Ini)
+### Step 3: Analyze Debug Artifacts (In This Order)
 
-1. **run.log**
+## 📋 Debug File Analysis
 
-   - Ini adalah titik awal Anda. Buka file ini.
-   - Cari pesan **ERROR** atau **CRITICAL** di dekat bagian bawah file. Pesan error dan traceback yang menyertainya akan memberi tahu Anda apa yang salah di dalam kode.
-   - Baca juga pesan **WARNING** untuk petunjuk tentang masalah yang tidak fatal.
+### 1. **run.log** - Start Here ⭐
 
-2. **Screenshots (.png)**
+- **Primary debug source** - check this file first
+- Look for **ERROR** or **CRITICAL** messages near the bottom
+- Read **WARNING** messages for non-fatal issues
+- Contains full error tracebacks showing exactly what went wrong
 
-   - Jika log menunjukkan error terkait browser (misalnya, _"Timeout"_ atau _"Gagal mengklik elemen"_), cari file screenshot di folder log (misalnya: `FATAL_ERROR_timeout.png` atau `ERROR_extraction_failed.png`).
-   - Gambar ini menunjukkan apa yang dilihat browser pada saat error terjadi.
+### 2. **Screenshots (.png)** - Visual Debugging
 
-3. **check*data_batch\_...\_attempt*....txt**
+When `run.log` shows browser-related errors:
 
-   - Gunakan file ini untuk masalah validasi. Jika log mengatakan _"Validasi Gagal"_, buka file ini.
-   - Bandingkan bagian **RAW RESPONSE** (apa yang dikembalikan AI) dengan **FULL PROMPT** (apa yang Anda kirim).
-   - Periksa: Apakah formatnya salah? Apakah jumlah barisnya tidak cocok? File ini menjawab pertanyaan-pertanyaan tersebut.
+- **FATAL_ERROR_timeout.png** - Browser timeout issues
+- **ERROR_extraction_failed.png** - Page interaction failures
+- Shows exactly what the browser saw during errors
 
-4. **failed_rows_for\_... .xlsx**
+### 3. **check*data_batch*\*.txt** - Validation Details
 
-   - Jika sebuah batch gagal setelah semua percobaan, baris-baris asli dari batch tersebut akan disimpan di sini.
-   - Anda dapat memeriksanya untuk melihat apakah ada data yang aneh di dalam teks yang mungkin menyebabkan masalah.
+For validation failures, examine:
+
+- **RAW RESPONSE** - What AI actually returned
+- **FULL PROMPT** - What was sent to AI
+- **Validation Issues** - Specific validation failures
+- Compare format expectations vs actual output
+
+### 4. **failed*rows*\*.xlsx** - Failed Data
+
+- Contains original rows that failed after all retry attempts
+- Check for unusual text content that might cause issues
+- Use for data quality analysis
+
+## 🔧 Common Issue Scenarios
+
+### Browser Automation Problems
+
+**Symptoms**: Timeouts, login failures, element not found
+
+```bash
+# Check visual evidence
+# View: logs/TIMESTAMP/FATAL_ERROR_timeout.png
+
+# Solutions:
+# 1. Clear browser data for fresh session
+rm -rf browser_data/
+
+# 2. Test manual login first
+# 3. Reduce batch size for stability
+python src/main.py --input-file "datasets/file.xlsx" --batch-size 10
+```
+
+### Validation Failures
+
+**Symptoms**: "Validation Failed: Row count mismatch" or "Invalid labels found"
+
+**Analysis Process:**
+
+1. Open `check_data_batch_*.txt`
+2. Compare **RAW RESPONSE** with input data
+3. Check if AI returned correct number of rows
+4. Verify labels match allowed values
+
+**Solutions:**
+
+```bash
+# Common fixes:
+# 1. Adjust prompts/prompt.txt for clearer instructions
+# 2. Check ALLOWED_LABELS in src/core_logic/validation.py
+# 3. Reduce batch size to improve AI accuracy
+```
+
+### File Structure Issues
+
+**Symptoms**: Column not found errors, data loading failures
+
+```bash
+# Diagnose file structure
+python -m tools.validate_excel "datasets/your_file.xlsx"
+
+# Auto-fix common issues
+python -m tools.fix_excel_structure "datasets/your_file.xlsx"
+
+# Check for file corruption
+python -m tools.excel_utility diagnose "datasets/your_file.xlsx"
+```
+
+### Performance Issues
+
+**Symptoms**: Slow processing, memory issues, frequent timeouts
+
+```bash
+# Solutions:
+# 1. Reduce batch size
+python src/main.py --input-file "datasets/file.xlsx" --batch-size 15
+
+# 2. Check system resources
+# 3. Close other applications
+# 4. Use debug mode to test individual batches
+```
+
+## 📊 Log File Patterns
+
+### Success Patterns in run.log
+
+```
+INFO - ✅ Batch 1 processed successfully
+INFO - ✅ All validation checks passed
+INFO - 📄 Results saved to: results/processed_data.xlsx
+```
+
+### Error Patterns to Look For
+
+```
+ERROR - ❌ Browser timeout after 30 seconds
+ERROR - ❌ Validation failed: Row count mismatch
+CRITICAL - ❌ Failed to extract AI response
+WARNING - ⚠️ Retry attempt 2/3 for batch
+```
+
+## 🛠️ Advanced Debugging Techniques
+
+### Browser Automation Debugging
+
+```bash
+# Enable verbose browser logs
+PLAYWRIGHT_DEBUG=1 python src/main.py --debug --input-file "datasets/file.xlsx"
+
+# Check browser console logs in screenshots
+# Look for JavaScript errors or network issues
+```
+
+### Validation Debugging
+
+```bash
+# Test specific validation logic
+python -c "
+from src.core_logic.validation import ValidationLogic
+validator = ValidationLogic()
+# Test with sample data
+"
+```
+
+### Data Handler Debugging
+
+```bash
+# Test file loading separately
+python -c "
+from src.core_logic.data_handler import DataHandler
+handler = DataHandler('datasets/your_file.xlsx')
+print(handler.get_unprocessed_count())
+"
+```
+
+## 🎯 Prevention Best Practices
+
+### Before Processing
+
+```bash
+# 1. Validate data structure
+python -m tools.validate_excel "datasets/file.xlsx"
+
+# 2. Test with debug mode
+python src/main.py --input-file "datasets/file.xlsx" --debug
+
+# 3. Check file for issues
+python -m tools.excel_utility diagnose "datasets/file.xlsx"
+```
+
+### During Processing
+
+- Monitor console output for warnings
+- Check `logs/` folder for new session creation
+- Watch for browser window behavior
+
+### After Issues
+
+- Always check newest session folder in `logs/`
+- Review screenshots before attempting fixes
+- Save debug artifacts for analysis
+
+## 🚀 Recovery Procedures
+
+### Session Recovery
+
+```bash
+# Application automatically resumes processing
+# Just run the same command again
+python src/main.py --input-file "datasets/file.xlsx"
+```
+
+### Data Recovery
+
+```bash
+# Check results folder for partial processing
+ls results/
+
+# Combine with failed_rows files if needed
+# Manual review of failed_rows_*.xlsx files
+```
+
+### Clean Start
+
+```bash
+# If complete reset needed:
+rm -rf browser_data/  # Clear browser session
+rm -rf logs/latest_*  # Clear recent logs
+# Then retry processing
+```
 
 ---
 
-### Skenario Masalah Umum
+## 📞 When to Seek Additional Help
 
-- **Masalah:** Aplikasi gagal login atau mengalami timeout saat memulai.
-  **Solusi:** Periksa screenshot `FATAL_ERROR_timeout.png`. Pastikan Anda dapat login secara manual. Hapus folder `browser_data/` untuk memulai sesi yang bersih.
+Contact for support if:
 
-- **Masalah:** Log mengatakan _"Validasi Gagal: Jumlah baris output tidak sesuai"_.
-  **Solusi:** Buka file `check_data_....txt`. Lihat **RAW RESPONSE**. Kemungkinan AI tidak mengembalikan satu baris untuk setiap item input. Anda mungkin perlu menyesuaikan prompt Anda.
+- Debug artifacts don't show clear error cause
+- Issues persist after following troubleshooting steps
+- Browser automation completely fails
+- File corruption or data loss occurs
 
-- **Masalah:** Log mengatakan _"Validasi Gagal: Ditemukan label tidak valid"_.
-  **Solusi:** Buka `check*data_batch\_...\_attempt*....txt`. Lihat **RAW RESPONSE**. AI mungkin mengembalikan label yang tidak ada dalam `ALLOWED_LABELS` di `src/core_logic/validation.py`. Sesuaikan prompt Anda atau tambahkan label baru ke daftar yang diizinkan.
+**🎯 Remember: The session log folder contains everything needed for debugging - start there first!**
