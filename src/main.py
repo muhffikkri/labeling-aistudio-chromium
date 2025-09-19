@@ -60,6 +60,8 @@ def main(args):
     failed_handler = None
     browser = None
     total_processed_rows = 0
+    allowed_labels_list = [label.strip().upper() for label in args.allowed_labels.split(',')]
+    logging.info(f"Menggunakan label yang diizinkan untuk validasi: {allowed_labels_list}")
 
     try:
         # Inisialisasi handler
@@ -75,8 +77,14 @@ def main(args):
             logging.info("Tidak ada data yang perlu diproses. Selesai.")
             return
 
-        # Mulai sesi browser
-        browser.start_session("https://aistudio.google.com/")
+        try:
+            # Pindahkan start_session ke dalam blok try-nya sendiri
+            browser.start_session("https://aistudio.google.com/")
+        except TimeoutError as e:
+            # Tangkap error spesifik dari start_session dan akhiri dengan bersih
+            logging.critical(f"Gagal memulai sesi browser karena timeout. Menghentikan proses. Detail: {e}")
+            # Tidak perlu melakukan apa-apa lagi, blok finally akan membereskannya.
+            return # Keluar dari fungsi main dengan aman
 
         # Dapatkan dan proses batch
         batches = data_handler.get_data_batches(batch_size=args.batch_size)
@@ -96,7 +104,11 @@ def main(args):
                 
                 full_prompt = f"{prompt_template}\n\n" + "\n".join(f'"{text}"' for text in batch_data)
                 raw_response = browser.get_raw_response_for_batch(full_prompt)
-                is_valid, result = parse_and_validate(raw_response, expected_count=len(batch_data))
+                is_valid, result = parse_and_validate(
+                    raw_response, 
+                    expected_count=len(batch_data), 
+                    allowed_labels=allowed_labels_list
+                )
 
                 # Simpan artefak pengecekan data untuk setiap percobaan
                 check_data_path = session_log_path / f"check_data_batch_{i+1}_attempt_{attempt+1}.txt"
@@ -150,6 +162,12 @@ if __name__ == "__main__":
     parser.add_argument("--prompt-file", type=Path, default=Path("prompts/prompt.txt"), help="Path ke file prompt teks.")
     parser.add_argument("--batch-size", type=int, default=50, help="Jumlah baris yang diproses per batch.")
     parser.add_argument("--debug", action="store_true", help="Jalankan dalam mode debug (hanya proses satu batch).")
+    parser.add_argument(
+        "--allowed-labels", 
+        type=str, 
+        default="POSITIF,NEGATIF,NETRAL,TIDAK RELEVAN", 
+        help="Daftar label yang valid, dipisahkan koma."
+    )
     
     args = parser.parse_args()
     
