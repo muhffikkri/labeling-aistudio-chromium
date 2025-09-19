@@ -71,7 +71,6 @@ Output yang Diinginkan
 Untuk setiap tweet, berikan:
 LABEL KATEGORI - Justifikasi [Alasan singkat untuk label. Catatan: TERINDIKASI BUZZER jika ada pola promosi, hashtag berlebihan, atau aktivitas mencurigakan].
 Contoh:
-1. POSITIF - Tweet memuji akreditasi [Nama Kampus] dengan nada bangga. 
 Output HARUS berjumlah sesuai urutan input. Hanya tulis label dan justifikasi (dengan - sebagai pemisah) saja per baris tanpa tambahan teks lain.
 
 Teks:
