@@ -315,7 +315,10 @@ OUTPUT YANG DIHASILKAN
             ]
             if is_debug: 
                 command.append("--debug")
-            # Note: output-dir parameter tidak ada di main.py, jadi dihapus
+            
+            # Tambahkan output directory untuk mode folder
+            if output_dir:
+                command.extend(["--output-dir", str(output_dir)])
             
             self.process = subprocess.Popen(
                 command, 
