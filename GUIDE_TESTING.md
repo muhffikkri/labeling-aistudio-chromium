@@ -1,49 +1,252 @@
-# Panduan Menjalankan Tes
+# 🧪 Testing Guide
+
+This guide covers how to run and understand the comprehensive test suite for validation and development.
+
+## 🚀 Quick Testing
+
+### Prerequisites
 
 ```bash
+# Install testing dependencies
+pip install -r test-requirements.txt
+# or minimal installation:
+pip install pytest pytest-cov pytest-mock pytest-asyncio
+```
+
+### Basic Test Execution
+
+```bash
+# Run all tests with comprehensive logging
+python run_tests_with_logging.py --all
+
+# Run all tests (standard pytest)
 pytest
+
+# Run with verbose output
+pytest -v
 ```
 
-Proyek ini dilengkapi dengan serangkaian tes otomatis untuk memastikan bahwa komponen-komponen logika inti berfungsi seperti yang diharapkan. Menjalankan tes ini adalah cara yang baik untuk memverifikasi instalasi Anda dan memastikan tidak ada yang rusak setelah melakukan perubahan kode.
+## 📊 Test Categories & Usage
 
----
+### Test Types Available
 
-### Prasyarat
+| Category          | Count | Command                                          | Purpose              |
+| ----------------- | ----- | ------------------------------------------------ | -------------------- |
+| **All Tests**     | 90+   | `python run_tests_with_logging.py --all`         | Complete test suite  |
+| **Unit Tests**    | 66    | `python run_tests_with_logging.py --unit`        | Core logic testing   |
+| **Integration**   | 13    | `python run_tests_with_logging.py --integration` | End-to-end workflows |
+| **GUI Tests**     | 18    | `python run_tests_with_logging.py --gui`         | Desktop interface    |
+| **Browser Tests** | 19    | `python run_tests_with_logging.py --browser`     | Automation testing   |
 
-Kerangka kerja pengujian yang digunakan adalah `pytest`.  
-Jika belum terinstal di lingkungan virtual Anda, instal dengan perintah berikut:
+### Specialized Test Runs
 
 ```bash
-pip install pytest
+# Fast tests (exclude slow tests)
+python run_tests_with_logging.py --fast
+
+# Generate coverage reports
+python run_tests_with_logging.py --coverage
+
+# Generate JUnit XML for CI/CD
+python run_tests_with_logging.py --junit
 ```
 
----
+## 📈 Test Reporting & Logging
 
-### Cara Menjalankan Tes
+### Automatic Log Generation
 
-1. Pastikan lingkungan virtual Anda (`venv`) aktif.
-2. Arahkan terminal Anda ke **direktori root proyek**.
-3. Jalankan perintah berikut:
+Every test run creates timestamped logs in `test_logs/`:
+
+```
+test_logs/
+├── test_run_20250919_143022.log        # Main execution log
+├── test_results_20250919_143022.json   # Structured JSON results
+├── junit_latest.xml                    # JUnit XML format
+├── session_summary_20250919_143022.md  # Human-readable summary
+└── htmlcov/index.html                  # Coverage report
+```
+
+### Test Analysis Tools
 
 ```bash
-pytest
+# View recent test results
+python analyze_test_logs.py --recent 10
+
+# Show comprehensive statistics
+python analyze_test_logs.py --stats
+
+# Analyze test failures
+python analyze_test_logs.py --failures
+
+# Show trends over time
+python analyze_test_logs.py --trends 7
+
+# Export results to CSV
+python analyze_test_logs.py --export test_history.csv
 ```
 
-`pytest` akan secara otomatis menemukan semua file tes (yang bernama `test_*.py`) dan menjalankan semua fungsi tes (yang bernama `test_*()`) di dalamnya.
+## 🔍 Understanding Test Results
+
+### Success Indicators
+
+```bash
+======== X passed in Ys ========
+```
+
+- Green output indicating all tests passed
+- Shows number of tests and execution time
+
+### Failure Analysis
+
+When tests fail:
+
+1. **Check console output** for immediate error details
+2. **Review test logs** in `test_logs/` for comprehensive analysis
+3. **Use analysis tools** for pattern identification
+
+### Coverage Reporting
+
+```bash
+# Generate HTML coverage report
+python run_tests_with_logging.py --coverage
+
+# View coverage report
+# Opens: test_logs/htmlcov/index.html
+```
+
+## 🎯 Test Components Covered
+
+### Core Application Logic
+
+- **Validation Logic**: AI response parsing and validation
+- **Data Handling**: Excel/CSV file operations
+- **Failed Row Management**: Error tracking and recovery
+- **Browser Automation**: Web interaction testing (mocked)
+
+### User Interfaces
+
+- **GUI Components**: Desktop application interface (mocked)
+- **Command Line**: Argument parsing and execution
+
+### Integration Workflows
+
+- **End-to-End Processing**: Complete data processing workflows
+- **Error Handling**: Graceful error recovery scenarios
+- **Debug Mode**: Development and troubleshooting features
+
+## 🛠️ Development Testing
+
+### Running Tests During Development
+
+```bash
+# Quick unit tests for rapid feedback
+python run_tests_with_logging.py --unit --fast
+
+# Test specific components
+pytest tests/test_validation.py -v
+pytest tests/test_data_handler.py -v
+```
+
+### Test-Driven Development
+
+```bash
+# Run specific test method
+pytest tests/test_validation.py::TestValidationLogic::test_parse_valid_response -v
+
+# Run with debug output
+pytest --tb=long -v -s
+```
+
+## 📋 Test Validation Checklist
+
+Before deployment or major changes:
+
+- [ ] All tests pass: `python run_tests_with_logging.py --all`
+- [ ] Coverage acceptable: `python run_tests_with_logging.py --coverage`
+- [ ] No new test failures: `python analyze_test_logs.py --recent 5`
+- [ ] Integration tests pass: `python run_tests_with_logging.py --integration`
+
+## 🔧 Troubleshooting Test Issues
+
+### Common Test Problems
+
+**Import Errors:**
+
+```bash
+# Ensure virtual environment is activated
+source venv/bin/activate  # Linux/Mac
+.\venv\Scripts\activate   # Windows
+
+# Verify Python path
+python -c "import sys; print(sys.path)"
+```
+
+**Missing Dependencies:**
+
+```bash
+# Install test requirements
+pip install -r test-requirements.txt
+```
+
+**Environment Issues:**
+
+```bash
+# Clear Python cache
+find . -name "*.pyc" -delete
+find . -name "__pycache__" -type d -exec rm -rf {} +
+```
+
+### Test Configuration Issues
+
+```bash
+# Verify pytest configuration
+pytest --collect-only
+
+# Check test discovery
+pytest --collect-only -q
+```
+
+## 📊 Performance Considerations
+
+### Test Execution Time
+
+- **Fast tests** (~30 seconds): Unit tests with mocked dependencies
+- **Full suite** (~2-3 minutes): All tests including integration
+- **Coverage analysis** (~3-4 minutes): Full suite with coverage reporting
+
+### Resource Usage
+
+- Tests use mocked external dependencies (no browser/network)
+- Temporary files created and cleaned up automatically
+- Memory usage optimized with proper fixture cleanup
+
+## 🎯 Best Practices
+
+### Regular Testing
+
+```bash
+# Before code changes
+python run_tests_with_logging.py --unit --fast
+
+# After code changes
+python run_tests_with_logging.py --all
+
+# Before commits
+python run_tests_with_logging.py --coverage
+```
+
+### CI/CD Integration
+
+```bash
+# Generate CI-friendly output
+python run_tests_with_logging.py --junit --coverage
+
+# Export results for analysis
+python analyze_test_logs.py --export ci_results.csv
+```
 
 ---
 
-### Hasil yang Diharapkan
+**🎉 The test suite provides confidence in code quality and helps maintain application reliability!**
 
-- **Jika Semua Tes Lulus:**
-  Anda akan melihat output berwarna hijau dengan ringkasan di bagian akhir yang mengatakan sesuatu seperti:
-
-  ```
-  ======== X passed in Ys ========
-  ```
-
-  Ini berarti semua komponen yang diuji berfungsi dengan benar.
-
-- **Jika Ada Tes yang Gagal:**
-  Anda akan melihat output berwarna merah dengan detail tentang tes mana yang gagal dan `assert` mana yang tidak terpenuhi.
-  Ini menunjukkan adanya masalah atau regresi dalam kode yang perlu diperbaiki sebelum melanjutkan.
+For more detailed testing documentation, see `GUIDE_COMPREHENSIVE_TESTING.md`.
