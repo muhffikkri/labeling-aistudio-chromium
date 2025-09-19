@@ -11,6 +11,7 @@ try:
     from core_logic.browser_automation import Automation
     from core_logic.failed_row_handler import FailedRowHandler
     from core_logic.validation import parse_and_validate
+    from core_logic.metrics_tracker import ExecutionMetricsTracker
 except ImportError as e:
     import os
     import sys
@@ -23,6 +24,7 @@ except ImportError as e:
         from core_logic.browser_automation import Automation
         from core_logic.failed_row_handler import FailedRowHandler
         from core_logic.validation import parse_and_validate
+        from core_logic.metrics_tracker import ExecutionMetricsTracker
     except ImportError:
         if os.getenv("TESTING") != "1":  # Only exit if not in testing mode
             print("CRITICAL ERROR: Pastikan semua file modul (data_handler, browser_automation, dll.) berada di dalam folder 'src/core_logic/'")
@@ -33,6 +35,7 @@ except ImportError as e:
         Automation = None  
         FailedRowHandler = None
         parse_and_validate = None
+        ExecutionMetricsTracker = None
 
 def setup_logging_session() -> Path:
     """
@@ -69,57 +72,74 @@ def load_prompt(prompt_filepath: Path) -> str | None:
 
 def main(args):
     """
-    Fungsi orkestrator utama untuk proses auto-labeling.
+    Main orchestrator function for auto-labeling process with metrics tracking.
     """
     session_log_path = setup_logging_session()
     
-    # Inisialisasi semua komponen utama sebelum blok try
-    # agar bisa diakses di blok finally
+    # Initialize all main components before try block
+    # so they can be accessed in finally block
     data_handler = None
     failed_handler = None
     browser = None
+    metrics_tracker = None
     total_processed_rows = 0
+    total_failed_rows = 0
+    batch_count = 0
     allowed_labels_list = [label.strip().upper() for label in args.allowed_labels.split(',')]
-    logging.info(f"Menggunakan label yang diizinkan untuk validasi: {allowed_labels_list}")
+    logging.info(f"Using allowed labels for validation: {allowed_labels_list}")
 
     try:
-        # Inisialisasi handler
+        # Initialize handlers
         data_handler = DataHandler(input_filepath=args.input_file)
         failed_handler = FailedRowHandler(log_folder=session_log_path, source_filename_stem=args.input_file.stem)
         browser = Automation(user_data_dir="browser_data", log_folder=session_log_path)
+        
+        # Initialize metrics tracker
+        metrics_tracker = ExecutionMetricsTracker()
+        total_rows = data_handler.get_unprocessed_data_count()
+        
+        if total_rows == 0:
+            logging.info("No data to process. Finished.")
+            return
 
-        # Muat data dan prompt
+        # Start metrics tracking session
+        session_id = metrics_tracker.start_session(
+            dataset_file=args.input_file,
+            total_rows=total_rows,
+            batch_size=args.batch_size
+        )
+        logging.info(f"📊 Started execution metrics tracking session: {session_id}")
+
+        # Load data and prompt
         prompt_template = load_prompt(args.prompt_file)
         if not prompt_template: return
 
-        if data_handler.get_unprocessed_data_count() == 0:
-            logging.info("Tidak ada data yang perlu diproses. Selesai.")
-            return
-
         try:
-            # Pindahkan start_session ke dalam blok try-nya sendiri
+            # Move start_session into its own try block
             browser.start_session("https://aistudio.google.com/")
         except TimeoutError as e:
-            # Tangkap error spesifik dari start_session dan akhiri dengan bersih
-            logging.critical(f"Gagal memulai sesi browser karena timeout. Menghentikan proses. Detail: {e}")
-            # Tidak perlu melakukan apa-apa lagi, blok finally akan membereskannya.
-            return # Keluar dari fungsi main dengan aman
+            # Catch specific error from start_session and end cleanly
+            logging.critical(f"Failed to start browser session due to timeout. Stopping process. Details: {e}")
+            # End metrics session with failure status
+            if metrics_tracker:
+                metrics_tracker.end_session("failed")
+            return # Exit main function safely
 
-        # Dapatkan dan proses batch
+        # Get and process batches
         batches = data_handler.get_data_batches(batch_size=args.batch_size)
         total_batches = len(batches)
         
         if args.debug:
-            logging.warning("MODE DEBUG AKTIF: Hanya akan memproses 1 batch.")
+            logging.warning("DEBUG MODE ACTIVE: Will only process 1 batch.")
             batches = batches[:1]
 
         for i, batch_data in enumerate(batches):
-            logging.info(f"--- Memproses Batch {i + 1}/{total_batches} (Ukuran: {len(batch_data)} baris) ---")
+            logging.info(f"--- Processing Batch {i + 1}/{total_batches} (Size: {len(batch_data)} rows) ---")
             
             MAX_RETRIES = 3
             validated_results = None
             for attempt in range(MAX_RETRIES):
-                logging.info(f"Percobaan #{attempt + 1}/{MAX_RETRIES} untuk batch ini...")
+                logging.info(f"Attempt #{attempt + 1}/{MAX_RETRIES} for this batch...")
                 
                 full_prompt = f"{prompt_template}\n\n" + "\n".join(f'"{text}"' for text in batch_data)
                 raw_response = browser.get_raw_response_for_batch(full_prompt)
@@ -129,51 +149,86 @@ def main(args):
                     allowed_labels=allowed_labels_list
                 )
 
-                # Simpan artefak pengecekan data untuk setiap percobaan
+                # Save check data artifacts for each attempt
                 check_data_path = session_log_path / f"check_data_batch_{i+1}_attempt_{attempt+1}.txt"
                 with open(check_data_path, "w", encoding="utf-8") as f:
                     f.write(f"--- VALIDATION ---\nValid: {is_valid}\nResult/Error: {result}\n\n")
                     f.write(f"--- RAW RESPONSE ---\n{raw_response or 'NO RESPONSE EXTRACTED'}\n\n")
+                    f.write(f"--- FULL PROMPT ---\n{full_prompt}\n\n")
 
                 if is_valid:
-                    logging.info(f"Batch #{i + 1} berhasil divalidasi pada percobaan #{attempt + 1}.")
+                    logging.info(f"Batch #{i + 1} successfully validated on attempt #{attempt + 1}.")
                     validated_results = result
-                    break # Keluar dari loop retry jika berhasil
+                    break # Exit retry loop if successful
                 else:
-                    logging.warning(f"Validasi gagal: {result}. Mencoba lagi dalam 5 detik...")
+                    logging.warning(f"Validation failed: {result}. Retrying in 5 seconds...")
                     browser.clear_chat_history()
                     time.sleep(5)
 
-            # Simpan hasil atau catat kegagalan
+            # Save results or record failure
             if validated_results:
                 data_handler.update_and_save_data(validated_results, start_index=total_processed_rows)
                 total_processed_rows += len(validated_results)
-                logging.info(f"Progres disimpan. Total baris terproses yang valid: {total_processed_rows}")
+                batch_count += 1
+                logging.info(f"Progress saved. Total valid processed rows: {total_processed_rows}")
+                
+                # Update metrics progress
+                if metrics_tracker:
+                    metrics_tracker.update_progress(
+                        processed_rows=total_processed_rows,
+                        failed_rows=total_failed_rows,
+                        batch_count=batch_count
+                    )
             else:
-                logging.error(f"Gagal memproses Batch #{i + 1} setelah {MAX_RETRIES} percobaan. Mencatat baris sebagai gagal.")
+                logging.error(f"Failed to process Batch #{i + 1} after {MAX_RETRIES} attempts. Recording rows as failed.")
                 for text in batch_data:
                     failed_handler.add_failed_row(
                         original_text=text, invalid_label="N/A", justification="N/A",
-                        reason=f"Gagal divalidasi setelah {MAX_RETRIES} percobaan."
+                        reason=f"Failed validation after {MAX_RETRIES} attempts."
+                    )
+                    total_failed_rows += 1
+                
+                # Update metrics with failed rows
+                if metrics_tracker:
+                    metrics_tracker.update_progress(
+                        processed_rows=total_processed_rows,
+                        failed_rows=total_failed_rows,
+                        batch_count=batch_count
                     )
     
     except KeyboardInterrupt:
-        logging.warning("Proses dihentikan oleh pengguna (Ctrl+C).")
+        logging.warning("Process interrupted by user (Ctrl+C).")
+        # End metrics session with interrupted status
+        if metrics_tracker:
+            final_metrics = metrics_tracker.end_session("interrupted")
+            logging.info(f"📊 Final metrics - Duration: {final_metrics.get('duration_seconds', 0):.2f}s, Processed: {total_processed_rows} rows")
     except Exception as e:
-        logging.critical(f"Terjadi error fatal yang tidak tertangani di alur utama: {e}", exc_info=True)
+        logging.critical(f"Fatal unhandled error occurred in main flow: {e}", exc_info=True)
         if browser and session_log_path:
             browser.page.screenshot(path=session_log_path / "FATAL_ERROR_screenshot.png")
+        # End metrics session with failed status
+        if metrics_tracker:
+            metrics_tracker.end_session("failed")
     finally:
-        # Blok ini SELALU dijalankan, baik skrip berhasil, gagal, atau dihentikan.
-        # Ini memastikan cleanup yang aman.
-        logging.info("--- Memulai proses cleanup akhir ---")
+        # This block is ALWAYS executed, whether script succeeds, fails, or is interrupted.
+        # This ensures safe cleanup.
+        logging.info("--- Starting final cleanup process ---")
         if browser:
             browser.close_session()
         if failed_handler:
             failed_handler.save_to_file()
         if data_handler and total_processed_rows > 0:
             data_handler.save_final_results()
-        logging.info("--- Proses auto-labeling selesai ---")
+        
+        # End metrics tracking session if still active
+        if metrics_tracker and metrics_tracker.session_id:
+            final_metrics = metrics_tracker.end_session("completed")
+            if final_metrics:
+                logging.info(f"📊 Execution completed - Duration: {final_metrics.get('duration_seconds', 0):.2f}s")
+                logging.info(f"📊 Performance: {final_metrics.get('rows_per_second', 0):.2f} rows/second")
+                logging.info(f"📊 Success rate: {final_metrics.get('success_rate', 0):.1f}%")
+        
+        logging.info("--- Auto-labeling process finished ---")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Aplikasi Auto-Labeling menggunakan Aistudio.")
