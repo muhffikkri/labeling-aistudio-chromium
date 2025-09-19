@@ -2,6 +2,7 @@
 
 # Core web automation
 playwright>=1.40.0
+selenium>=4.15.0
 
 # Data processing and analysis
 pandas>=1.5.0
