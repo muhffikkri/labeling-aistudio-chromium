@@ -8,22 +8,29 @@ import numpy as np
 import pandas as pd
 
 class DataHandler:
-    def __init__(self, input_filepath: Path):
+    def __init__(self, input_filepath: Path, output_dir: Path = None):
         """
         Menginisialisasi DataHandler dengan path ke file dataset.
 
         Args:
             input_filepath (Path): Path ke file .xlsx atau .csv.
+            output_dir (Path, optional): Direktori khusus untuk output. Jika None, gunakan folder 'results'.
         """
         self.input_filepath = input_filepath
         
-        # Membuat nama file output yang unik di folder 'results'
+        # Membuat nama file output yang unik
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         output_filename = f"{input_filepath.stem}_labeled_{timestamp}{input_filepath.suffix}"
         
-        # Pastikan folder results ada
-        Path("results").mkdir(exist_ok=True)
-        self.output_filepath = Path("results") / output_filename
+        # Tentukan direktori output
+        if output_dir:
+            self.output_dir = Path(output_dir)
+        else:
+            self.output_dir = Path("results")
+        
+        # Pastikan folder output ada
+        self.output_dir.mkdir(parents=True, exist_ok=True)
+        self.output_filepath = self.output_dir / output_filename
         
         logging.info(f"File input: {self.input_filepath}")
         logging.info(f"File output akan disimpan di: {self.output_filepath}")
@@ -70,8 +77,9 @@ class DataHandler:
                 self.df['justification'] = self.df['justification'].astype(object)
 
         if made_changes:
-            # Segera simpan perubahan struktur kembali ke file input
-            self.save_progress()
+            logging.info("Struktur kolom telah disesuaikan - perubahan akan disimpan ke file hasil akhir")
+            # Tidak lagi menyimpan perubahan struktur kembali ke file input
+            # Data akan disimpan hanya ke file hasil akhir
 
     def get_data_batches(self, batch_size: int = 50) -> List[List[str]]:
         """
@@ -94,7 +102,8 @@ class DataHandler:
 
     def update_and_save_data(self, results: List[Dict[str, Any]], start_index: int):
         """
-        Memperbarui DataFrame dengan label dan justifikasi, lalu menyimpan progres.
+        Memperbarui DataFrame dengan label dan justifikasi tanpa menyimpan ke file input.
+        Data hanya akan disimpan ke file hasil akhir saja.
 
         Args:
             results (List[Dict[str, Any]]): Daftar dict, masing-masing berisi {"label": ..., "justification": ...}.
@@ -112,18 +121,15 @@ class DataHandler:
                 self.df.loc[actual_index, 'label'] = result_dict["label"]
                 self.df.loc[actual_index, 'justification'] = result_dict["justification"]
 
-        self.save_progress()
+        logging.info(f"Data batch berhasil diperbarui dalam memori (tidak menyimpan ke file input)")
 
     def save_progress(self):
-        """Menyimpan progres saat ini kembali ke file INPUT asli."""
-        try:
-            if self.input_filepath.suffix == '.xlsx':
-                self.df.to_excel(self.input_filepath, index=False)
-            elif self.input_filepath.suffix == '.csv':
-                self.df.to_csv(self.input_filepath, index=False)
-            logging.info(f"Progres disimpan ke {self.input_filepath}")
-        except Exception as e:
-            logging.error(f"Gagal menyimpan progres ke file input: {e}", exc_info=True)
+        """
+        DEPRECATED: Fungsi ini tidak lagi digunakan untuk menghindari modifikasi file input.
+        Data progress sekarang hanya disimpan ke file hasil akhir melalui save_final_results().
+        """
+        logging.warning("save_progress() dipanggil tetapi diabaikan - data hanya akan disimpan ke file hasil akhir")
+        pass
 
     def save_final_results(self):
         """Menyimpan DataFrame lengkap ke file OUTPUT di folder results."""
