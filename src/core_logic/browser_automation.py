@@ -14,7 +14,7 @@ class Automation:
     """
     def __init__(self, user_data_dir: str, log_folder: Path):
         """
-        Menginisialisasi otomatisasi browser.
+        Menginisialisasi otomatisasi browser dengan mekanisme fallback.
 
         Args:
             user_data_dir (str): Path ke direktori untuk menyimpan data sesi browser.
@@ -22,33 +22,116 @@ class Automation:
         """
         self.log_folder = log_folder
         self.playwright = sync_playwright().start()
+        self.context = None
+        self.browser = None
+        self.page = None
         
         user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36'
         
         os.makedirs(user_data_dir, exist_ok=True)
         
-        logging.info("Meluncurkan browser Chromium dengan konteks persisten...")
-        self.context = self.playwright.chromium.launch_persistent_context(
-            user_data_dir,
-            headless=False,
-            channel="chrome",
-            slow_mo=150,
-            user_agent=user_agent,
-            viewport={"width": 1280, "height": 800},
-            args=[
-                '--start-maximized',
-                '--disable-blink-features=AutomationControlled',
-                '--disable-features=IsolateOrigins,site-per-process',
-                '--disable-site-isolation-trials'
-            ]
-        )
+        # Coba beberapa strategi untuk meluncurkan browser
+        success = False
         
-        if self.context.pages:
-            self.page = self.context.pages[0]
-        else:
-            self.page = self.context.new_page()
+        # STRATEGI 1: Launch persistent context (preferred)
+        try:
+            logging.info("Meluncurkan browser Chromium dengan konteks persisten...")
+            self.context = self.playwright.chromium.launch_persistent_context(
+                user_data_dir,
+                headless=False,
+                channel="chrome",
+                slow_mo=150,
+                user_agent=user_agent,
+                viewport={"width": 1280, "height": 800},
+                args=[
+                    '--no-sandbox',
+                    '--start-maximized',
+                    '--disable-blink-features=AutomationControlled',
+                    '--disable-features=IsolateOrigins,site-per-process',
+                    '--disable-site-isolation-trials'
+                ]
+            )
+            
+            if self.context.pages:
+                self.page = self.context.pages[0]
+            else:
+                self.page = self.context.new_page()
+            
+            success = True
+            logging.info("✅ Berhasil meluncurkan browser dengan persistent context.")
+            
+        except Exception as e:
+            logging.warning(f"❌ Gagal meluncurkan persistent context: {e}")
+            
+            # STRATEGI 2: Launch regular browser tanpa persistent context
+            try:
+                logging.info("Mencoba meluncurkan browser reguler...")
+                self.browser = self.playwright.chromium.launch(
+                    headless=False,
+                    channel="chrome",
+                    slow_mo=150,
+                    args=[
+                        '--no-sandbox',
+                        '--start-maximized',
+                        '--disable-blink-features=AutomationControlled',
+                        '--disable-features=IsolateOrigins,site-per-process',
+                        '--disable-site-isolation-trials'
+                    ]
+                )
+                
+                self.context = self.browser.new_context(
+                    user_agent=user_agent,
+                    viewport={"width": 1280, "height": 800}
+                )
+                
+                self.page = self.context.new_page()
+                success = True
+                logging.info("✅ Berhasil meluncurkan browser reguler.")
+                
+            except Exception as e2:
+                logging.error(f"❌ Gagal meluncurkan browser reguler: {e2}")
+                
+                # STRATEGI 3: Launch headless sebagai fallback terakhir
+                try:
+                    logging.info("Mencoba meluncurkan browser headless sebagai fallback...")
+                    self.browser = self.playwright.chromium.launch(
+                        headless=True,
+                        args=['--no-sandbox']
+                    )
+                    
+                    self.context = self.browser.new_context(
+                        user_agent=user_agent,
+                        viewport={"width": 1280, "height": 800}
+                    )
+                    
+                    self.page = self.context.new_page()
+                    success = True
+                    logging.warning("⚠️ Berhasil meluncurkan browser headless (tidak ada UI).")
+                    
+                except Exception as e3:
+                    logging.critical(f"❌ Gagal meluncurkan browser sama sekali: {e3}")
         
-        self.page.set_default_timeout(60000) # Timeout default 60 detik
+        if not success or not self.page:
+            logging.critical("============================================================")
+            logging.critical("GAGAL TOTAL MELUNCURKAN BROWSER!")
+            logging.critical(f"Detail Error: {e}")
+            logging.critical("")
+            logging.critical("Ini kemungkinan besar adalah masalah lingkungan, bukan kode.")
+            logging.critical("SOLUSI YANG DISARANKAN:")
+            logging.critical("1. Tutup semua jendela Google Chrome yang terbuka.")
+            logging.critical("2. Buka terminal/CMD, aktifkan venv, dan jalankan perintah berikut:")
+            logging.critical("   playwright uninstall")
+            logging.critical("   playwright install")
+            logging.critical("3. Coba jalankan kembali aplikasi.")
+            logging.critical("============================================================")
+            raise RuntimeError("Gagal meluncurkan browser setelah mencoba semua metode fallback.") from e
+        
+        # Set timeout default
+        try:
+            self.page.set_default_timeout(60000)  # Timeout default 60 detik
+        except Exception as e:
+            logging.warning(f"Gagal mengatur timeout default: {e}")
+        
 
     def _apply_stealth_techniques(self):
         """Menerapkan teknik untuk membuat browser tampak lebih manusiawi."""
@@ -90,9 +173,13 @@ class Automation:
             logging.critical("Skrip tidak dapat menemukan kotak input utama setelah 3 menit.")
             logging.critical("Pastikan Anda sudah login dan tidak ada pop-up yang menghalangi.")
             logging.critical(f"Detail Error: {e}", exc_info=True)
-            self.page.screenshot(path=self.log_folder / "FATAL_ERROR_timeout.png")
-            self.close_session()
-            exit()
+            
+            try:
+                self.page.screenshot(path=self.log_folder / "FATAL_ERROR_timeout.png")
+            except Exception as screenshot_error:
+                logging.error(f"Gagal mengambil screenshot error: {screenshot_error}")
+            
+            raise TimeoutError("Gagal memulai sesi: Timeout saat menunggu elemen login.") from e
 
     def get_raw_response_for_batch(self, full_prompt: str) -> str | None:
         """
@@ -142,7 +229,7 @@ class Automation:
                 raw_response = self._extract_response_text()
 
                 if raw_response and "internal error" not in raw_response.lower():
-                    logging.info("Berhasil mengekstrak respons dari model.")
+                    logging.info(f"Berhasil mengekstrak respons dari model (panjang: {len(raw_response)} karakter).")
                     return raw_response
                 elif raw_response:
                     logging.warning(f"Respons berisi pesan error: '{raw_response[:100]}...'. Mencoba lagi...")
@@ -153,7 +240,10 @@ class Automation:
 
             except Exception as e:
                 logging.error(f"Terjadi error saat memproses batch pada percobaan #{attempt + 1}: {e}", exc_info=True)
-                self.page.screenshot(path=self.log_folder / f"ERROR_process_batch_attempt_{attempt+1}.png")
+                try:
+                    self.page.screenshot(path=self.log_folder / f"ERROR_process_batch_attempt_{attempt+1}.png")
+                except Exception as screenshot_error:
+                    logging.error(f"Gagal mengambil screenshot error: {screenshot_error}")
         
         logging.error(f"Gagal memproses batch setelah {max_retries} percobaan.")
         return None
@@ -194,61 +284,85 @@ class Automation:
 
     def _extract_response_text(self) -> str | None:
         """
-        Mencoba mengekstrak teks respons menggunakan beberapa metode.
+        Mengekstrak teks respons dengan menemukan baris valid pertama dan
+        mengambil semua konten dari titik itu hingga akhir.
         """
-        logging.info("Memulai ekstraksi respons berlapis...")
-        
-        # Metode 1: Selector CSS Primer
-        selectors = ['div.model-response-text', 'div.response-content', 'ms-message div.content']
-        for selector in selectors:
-            try:
-                if self.page.locator(selector).count() > 0:
-                    # Ambil teks dari elemen terakhir, karena UI bisa streaming
-                    response_element = self.page.locator(selector).last
-                    response = response_element.inner_text()
-                    if response.strip():
-                        # Logging detail tag HTML asal
-                        try:
-                            tag_name = response_element.evaluate("el => el.tagName")
-                            class_name = response_element.evaluate("el => el.className")
-                            logging.info(f"Ekstraksi berhasil menggunakan selector: '{selector}' | tag: {tag_name} | class: {class_name}")
-                        except Exception:
-                            logging.info(f"Ekstraksi berhasil menggunakan selector: '{selector}' | tag info tidak tersedia")
-                        return response
-            except Exception:
-                continue
-        
-        # Metode 2: Evaluasi JavaScript
-        try:
-            response = self.page.evaluate("""() => {
-                const elements = Array.from(document.querySelectorAll('*'));
-                const elementsWithLabels = elements.filter(el => {
-                    const text = el.textContent || '';
-                    return (text.includes('POSITIF') || text.includes('NEGATIF') || text.includes('NETRAL')) && el.offsetParent;
-                });
-                if (elementsWithLabels.length > 0) {
-                    elementsWithLabels.sort((a, b) => b.textContent.length - a.textContent.length);
-                    // Logging tag dan class
-                    const el = elementsWithLabels[0];
-                    return JSON.stringify({text: el.textContent, tag: el.tagName, class: el.className});
-                }
-                return null;
-            }""")
-            if response and response.strip():
-                try:
-                    resp_obj = None
-                    import json
-                    resp_obj = json.loads(response)
-                    logging.info(f"Ekstraksi berhasil menggunakan evaluasi JavaScript | tag: {resp_obj.get('tag')} | class: {resp_obj.get('class')}")
-                    return resp_obj.get('text')
-                except Exception:
-                    logging.info("Ekstraksi berhasil menggunakan evaluasi JavaScript, info tag tidak tersedia.")
-                    return response
-        except Exception as e:
-            logging.warning(f"Ekstraksi JavaScript gagal: {e}")
+        logging.info("Memulai ekstraksi respons dengan metode 'Temukan Awal dan Ambil Sisanya'...")
 
-        logging.error("Semua metode ekstraksi gagal menemukan teks respons.")
-        self.page.screenshot(path=self.log_folder / "ERROR_extraction_failed.png")
+        # JavaScript function yang akan kita inject.
+        js_extractor_function = """
+        (element) => {
+            const text = element.innerText;
+            if (!text) return null;
+
+            const lines = text.split('\\n');
+            
+            // Pola Regex untuk memeriksa baris pertama yang valid.
+            const validStartLineRegex = /^(POSITIF|NEGATIF|NETRAL|TIDAK RELEVAN)\\s*-\\s*.+/i;
+
+            // Cari indeks dari baris valid pertama
+            let startIndex = -1;
+            for (let i = 0; i < lines.length; i++) {
+                if (validStartLineRegex.test(lines[i].trim())) {
+                    startIndex = i;
+                    break; // Hentikan pencarian setelah menemukan yang pertama
+                }
+            }
+
+            // Jika baris valid ditemukan...
+            if (startIndex !== -1) {
+                // ...ambil semua baris dari indeks itu hingga akhir...
+                const relevantLines = lines.slice(startIndex);
+                // ...dan gabungkan kembali menjadi satu blok teks.
+                return relevantLines.join('\\n');
+            }
+            
+            // Jika tidak ada baris valid yang ditemukan sama sekali
+            return null;
+        }
+        """
+
+        # --- STRATEGI 1: Cari di dalam kontainer yang paling mungkin ---
+        potential_container_selectors = [
+            'ms-message-content:last-of-type',
+            'div.model-response-text:last-of-type'
+        ]
+
+        for selector in potential_container_selectors:
+            logging.info(f"Mencoba mengekstrak dari kontainer: '{selector}'")
+            try:
+                container_handle = self.page.query_selector(selector)
+                if container_handle:
+                    # Jalankan fungsi JavaScript PADA elemen kontainer yang ditemukan
+                    extracted_text = container_handle.evaluate(js_extractor_function)
+                    
+                    if extracted_text and extracted_text.strip():
+                        logging.info(f"✅ Ekstraksi berhasil dari '{selector}'.")
+                        return extracted_text
+                else:
+                    logging.info(f"Kontainer '{selector}' tidak ditemukan.")
+            except Exception as e:
+                logging.error(f"Error saat mengekstrak dari '{selector}': {e}")
+                continue
+
+        # --- STRATEGI 2: Jika kontainer tidak ditemukan, cari di seluruh body (CADANGAN) ---
+        logging.warning("Tidak berhasil mengekstrak dari kontainer spesifik. Mencoba di seluruh body dokumen...")
+        try:
+            body_handle = self.page.query_selector('body')
+            if body_handle:
+                extracted_text = body_handle.evaluate(js_extractor_function)
+                
+                if extracted_text and extracted_text.strip():
+                    logging.info("✅ Ekstraksi cadangan berhasil dari <body>.")
+                    return extracted_text
+        except Exception as e:
+            logging.error(f"Ekstraksi cadangan dari <body> gagal: {e}", exc_info=True)
+
+        logging.error("Semua metode ekstraksi gagal menemukan baris respons yang valid.")
+        try:
+            self.page.screenshot(path=self.log_folder / "ERROR_extraction_failed.png")
+        except Exception as screenshot_error:
+            logging.error(f"Gagal mengambil screenshot error ekstraksi: {screenshot_error}")
         return None
 
     def clear_chat_history(self):
@@ -267,7 +381,18 @@ class Automation:
     def close_session(self):
         """Menutup sesi browser dengan aman."""
         logging.info("Menutup sesi browser.")
-        if hasattr(self, 'context') and self.context:
-            self.context.close()
-        if hasattr(self, 'playwright') and self.playwright:
-            self.playwright.stop()
+        try:
+            if hasattr(self, 'context') and self.context:
+                self.context.close()
+            if hasattr(self, 'browser') and self.browser:
+                self.browser.close()
+            if hasattr(self, 'playwright') and self.playwright:
+                self.playwright.stop()
+        except Exception as e:
+            logging.warning(f"Error saat menutup browser: {e}")
+            # Paksa tutup playwright jika masih ada
+            try:
+                if hasattr(self, 'playwright') and self.playwright:
+                    self.playwright.stop()
+            except:
+                pass
