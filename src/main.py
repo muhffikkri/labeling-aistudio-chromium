@@ -64,10 +64,13 @@ def setup_logging_session() -> Path:
 def load_prompt(prompt_filepath: Path) -> str | None:
     """Membaca konten dari file prompt."""
     try:
-        with open(prompt_filepath, 'r', encoding='utf-8') as f:
+        with open(prompt_filepath, 'r', encoding='utf-8', errors='replace') as f:
             return f.read()
     except FileNotFoundError:
         logging.error(f"File prompt tidak ditemukan di: {prompt_filepath}", exc_info=True)
+        return None
+    except UnicodeDecodeError as e:
+        logging.error(f"Error decoding file {prompt_filepath}: {e}", exc_info=True)
         return None
 
 def main(args):
@@ -157,7 +160,7 @@ def main(args):
 
                 # Save check data artifacts for each attempt
                 check_data_path = session_log_path / f"check_data_batch_{i+1}_attempt_{attempt+1}.txt"
-                with open(check_data_path, "w", encoding="utf-8") as f:
+                with open(check_data_path, "w", encoding="utf-8", errors="replace") as f:
                     f.write(f"--- VALIDATION ---\nValid: {is_valid}\nResult/Error: {result}\n\n")
                     f.write(f"--- RAW RESPONSE ---\n{raw_response or 'NO RESPONSE EXTRACTED'}\n\n")
                     f.write(f"--- FULL PROMPT ---\n{full_prompt}\n\n")

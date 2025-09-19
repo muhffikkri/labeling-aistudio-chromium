@@ -410,7 +410,7 @@ TRENDS:
 - Processing speed trend: {"Improving" if df['rows_per_second'].iloc[-1] > df['rows_per_second'].iloc[0] else "Stable/Declining"}
 """
         
-        with open(output_file, 'w', encoding='utf-8') as f:
+        with open(output_file, 'w', encoding='utf-8', errors='replace') as f:
             f.write(report)
         
         self.logger.info(f"Generated analysis report: {output_file}")

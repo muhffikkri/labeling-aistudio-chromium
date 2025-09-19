@@ -151,7 +151,7 @@ class ExecutionMetricsTracker:
         try:
             # Load existing data
             if self.json_file.exists():
-                with open(self.json_file, 'r', encoding='utf-8') as f:
+                with open(self.json_file, 'r', encoding='utf-8', errors='replace') as f:
                     data = json.load(f)
             else:
                 data = {"executions": []}
@@ -160,7 +160,7 @@ class ExecutionMetricsTracker:
             data["executions"].append(self.session_data)
             
             # Save back to file
-            with open(self.json_file, 'w', encoding='utf-8') as f:
+            with open(self.json_file, 'w', encoding='utf-8', errors='replace') as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
                 
         except Exception as e:
@@ -182,7 +182,7 @@ class ExecutionMetricsTracker:
             file_exists = self.csv_file.exists()
             
             # Write to CSV
-            with open(self.csv_file, 'a', newline='', encoding='utf-8') as f:
+            with open(self.csv_file, 'a', newline='', encoding='utf-8', errors='replace') as f:
                 writer = csv.DictWriter(f, fieldnames=columns)
                 
                 if not file_exists:
@@ -209,7 +209,7 @@ class ExecutionMetricsTracker:
             if not self.json_file.exists():
                 return {"error": "No metrics data available"}
             
-            with open(self.json_file, 'r', encoding='utf-8') as f:
+            with open(self.json_file, 'r', encoding='utf-8', errors='replace') as f:
                 data = json.load(f)
             
             executions = data.get("executions", [])
@@ -268,7 +268,7 @@ class ExecutionMetricsTracker:
             if not self.json_file.exists():
                 raise FileNotFoundError("No metrics data available")
             
-            with open(self.json_file, 'r', encoding='utf-8') as f:
+            with open(self.json_file, 'r', encoding='utf-8', errors='replace') as f:
                 data = json.load(f)
             
             executions = data.get("executions", [])
@@ -280,7 +280,7 @@ class ExecutionMetricsTracker:
                 "batch_count", "batch_size", "rows_per_second"
             ]
             
-            with open(output_file, 'w', newline='', encoding='utf-8') as f:
+            with open(output_file, 'w', newline='', encoding='utf-8', errors='replace') as f:
                 writer = csv.DictWriter(f, fieldnames=analysis_columns)
                 writer.writeheader()
                 

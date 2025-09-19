@@ -325,12 +325,24 @@ OUTPUT YANG DIHASILKAN
                 stdout=subprocess.PIPE, 
                 stderr=subprocess.STDOUT, 
                 text=True, 
-                encoding='utf-8', 
+                encoding='utf-8',
+                errors='replace',
                 creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == 'win32' else 0
             )
             
-            for line in iter(self.process.stdout.readline, ''):
-                self.log_queue.put(line)
+            try:
+                for line in iter(self.process.stdout.readline, ''):
+                    self.log_queue.put(line)
+            except UnicodeDecodeError as e:
+                error_msg = f"Unicode decode error: {e}. Menggunakan fallback decoding..."
+                self.log_queue.put(error_msg)
+                # Fallback: read as bytes and decode with error handling
+                for raw_line in iter(self.process.stdout.readline, b''):
+                    try:
+                        line = raw_line.decode('utf-8', errors='replace')
+                        self.log_queue.put(line)
+                    except Exception as decode_err:
+                        self.log_queue.put(f"Failed to decode line: {decode_err}\n")
             
             self.process.stdout.close()
             return_code = self.process.wait()
@@ -356,13 +368,17 @@ OUTPUT YANG DIHASILKAN
         path = self.prompt_path_var.get()
         try:
             # 2. Membaca file
-            with open(path, 'r', encoding='utf-8') as f:
+            with open(path, 'r', encoding='utf-8', errors='replace') as f:
                 # 3. Menghapus konten lama dan memasukkan konten baru ke kotak teks
                 self.prompt_text.delete('1.0', tk.END)
                 self.prompt_text.insert('1.0', f.read())
         except FileNotFoundError:
             # 4. Menampilkan peringatan jika file tidak ada
             messagebox.showwarning("File Tidak Ditemukan", f"File prompt di {path} tidak ditemukan.")
+        except UnicodeDecodeError as e:
+            messagebox.showerror("Encoding Error", f"Tidak dapat membaca file karena masalah encoding: {e}")
+        except Exception as e:
+            messagebox.showerror("Error", f"Error tidak terduga saat membaca file: {e}")
 
     def save_prompt(self):
         # 1. Mendapatkan path file dari kotak input
@@ -374,7 +390,7 @@ OUTPUT YANG DIHASILKAN
         content = self.prompt_text.get('1.0', tk.END)
         try:
             # 3. Menulis konten baru ke file
-            with open(path_str, 'w', encoding='utf-8') as f:
+            with open(path_str, 'w', encoding='utf-8', errors='replace') as f:
                 f.write(content)
             # 4. Memberikan konfirmasi kepada pengguna
             messagebox.showinfo("Sukses", f"Prompt berhasil disimpan ke {path_str}.")
