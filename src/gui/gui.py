@@ -289,7 +289,6 @@ OUTPUT YANG DIHASILKAN
         self.start_time_var.set(f"Waktu Mulai: {self.start_time.strftime('%Y-%m-%d %H:%M:%S')}")
 
         # Jalankan thread dengan parameter yang sudah divalidasi
-                # Jalankan thread dengan SEMUA parameter yang sudah divalidasi
         threading.Thread(target=self._run_backend_loop, args=(files_to_process, output_directory, batch_size, is_debug, allowed_labels_str), daemon=True).start()
 
     def stop_process(self):
@@ -312,11 +311,11 @@ OUTPUT YANG DIHASILKAN
                 sys.executable, str(Path("src/main.py")),
                 "--input-file", str(file_path),
                 "--batch-size", str(batch_size),
-                # --- TAMBAHKAN BARIS INI UNTUK MENGIRIM LABEL ---
                 "--allowed-labels", allowed_labels
             ]
-            if is_debug: command.append("--debug")
-            if output_dir: command.extend(["--output-dir", str(output_dir)])
+            if is_debug: 
+                command.append("--debug")
+            # Note: output-dir parameter tidak ada di main.py, jadi dihapus
             
             self.process = subprocess.Popen(
                 command, 
