@@ -1,0 +1,32 @@
+# Testing requirements
+# Core testing framework
+pytest>=7.0.0
+pytest-cov>=4.0.0
+pytest-mock>=3.10.0
+pytest-asyncio>=0.21.0
+pytest-xdist>=3.0.0  # For parallel test execution
+pytest-html>=3.1.0   # HTML reports
+
+# Code quality
+flake8>=6.0.0
+black>=23.0.0
+isort>=5.12.0
+mypy>=1.0.0
+
+# Coverage reporting
+coverage>=7.0.0
+coverage-badge>=1.1.0
+
+# Additional testing utilities
+factory-boy>=3.2.1   # For test data generation
+freezegun>=1.2.2     # For time mocking
+responses>=0.23.1    # For HTTP mocking
+testfixtures>=7.0.4  # Additional test utilities
+
+# Performance testing
+pytest-benchmark>=4.0.0
+memory-profiler>=0.60.0
+
+# Test data and mocking
+Faker>=18.0.0        # For fake data generation
+unittest-xml-reporting>=3.2.0
