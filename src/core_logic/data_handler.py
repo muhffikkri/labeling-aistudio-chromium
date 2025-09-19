@@ -64,6 +64,11 @@ class DataHandler:
             self.df['justification'] = np.nan
             made_changes = True
 
+            if self.df['label'].dtype != 'object':
+                self.df['label'] = self.df['label'].astype(object)
+            if self.df['justification'].dtype != 'object':
+                self.df['justification'] = self.df['justification'].astype(object)
+
         if made_changes:
             # Segera simpan perubahan struktur kembali ke file input
             self.save_progress()
