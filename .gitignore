@@ -194,4 +194,5 @@ browser_data/
 logs/
 results/
 datasets/
+test_logs/
 !datasets/data_sample_blank.xlsx
