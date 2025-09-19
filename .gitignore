@@ -195,4 +195,5 @@ logs/
 results/
 datasets/
 test_logs/
+execution_metrics/
 !datasets/data_sample_blank.xlsx

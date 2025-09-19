@@ -322,7 +322,7 @@ class Automation:
         }
         """
 
-        # --- STRATEGI 1: Cari di dalam kontainer yang paling mungkin ---
+        # --- STRATEGI 1: Coba kontainer yang paling mungkin ---
         potential_container_selectors = [
             'ms-message-content:last-of-type',
             'div.model-response-text:last-of-type'
@@ -340,29 +340,28 @@ class Automation:
                         logging.info(f"✅ Ekstraksi berhasil dari '{selector}'.")
                         return extracted_text
                 else:
-                    logging.info(f"Kontainer '{selector}' tidak ditemukan.")
+                    logging.debug(f"Kontainer '{selector}' tidak ditemukan.")
             except Exception as e:
-                logging.error(f"Error saat mengekstrak dari '{selector}': {e}")
+                logging.debug(f"Error saat mengekstrak dari '{selector}': {e}")
                 continue
 
-        # --- STRATEGI 2: Jika kontainer tidak ditemukan, cari di seluruh body (CADANGAN) ---
-        logging.warning("Tidak berhasil mengekstrak dari kontainer spesifik. Mencoba di seluruh body dokumen...")
+        # --- STRATEGI 2: Fallback ke body dengan timeout tambahan ---
+        logging.warning("Strategi spesifik gagal. Menunggu 3 detik tambahan lalu mencoba ekstraksi body...")
         try:
+            # Tunggu sedikit lebih lama untuk memastikan DOM selesai render
+            time.sleep(3)
+            
             body_handle = self.page.query_selector('body')
             if body_handle:
                 extracted_text = body_handle.evaluate(js_extractor_function)
                 
                 if extracted_text and extracted_text.strip():
-                    logging.info("✅ Ekstraksi cadangan berhasil dari <body>.")
+                    logging.info("✅ Ekstraksi cadangan berhasil dari <body> setelah delay.")
                     return extracted_text
         except Exception as e:
             logging.error(f"Ekstraksi cadangan dari <body> gagal: {e}", exc_info=True)
 
         logging.error("Semua metode ekstraksi gagal menemukan baris respons yang valid.")
-        try:
-            self.page.screenshot(path=self.log_folder / "ERROR_extraction_failed.png")
-        except Exception as screenshot_error:
-            logging.error(f"Gagal mengambil screenshot error ekstraksi: {screenshot_error}")
         return None
 
     def clear_chat_history(self):

@@ -1,0 +1,17 @@
+# AI Studio Auto-Labeling Tool Dependencies
+
+# Core web automation
+playwright>=1.40.0
+
+# Data processing and analysis
+pandas>=1.5.0
+openpyxl>=3.1.0
+
+# Visualization and metrics analysis
+matplotlib>=3.6.0
+seaborn>=0.12.0
+scikit-learn>=1.3.0
+
+# System and utilities
+requests>=2.31.0
+python-dateutil>=2.8.0

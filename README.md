@@ -18,6 +18,7 @@ A comprehensive automated text dataset labeling application that leverages Googl
 - **🛠️ CLI Utilities**: Production-ready tools for Excel file diagnostics, repair, and validation
 - **🎛️ GUI Interface**: User-friendly desktop interface for easy operation
 - **📝 Session-Based Logging**: Detailed execution logs with screenshots and debug artifacts for troubleshooting
+- **📊 Performance Metrics**: Comprehensive execution tracking with duration analysis, regression modeling, and visualization tools
 
 ### Data Management
 
@@ -90,7 +91,9 @@ labeling-aistudio-chromium/
 ├── prompts/               # AI prompts and instructions
 ├── results/               # Processed output files
 ├── logs/                  # Session execution logs
-└── test_logs/             # Test execution logs and reports
+├── execution_metrics/     # Performance metrics and analysis data
+├── test_logs/             # Test execution logs and reports
+└── analyze_metrics.py     # CLI tool for metrics analysis
 ```
 
 ## 🏃‍♂️ Usage Guide
@@ -160,6 +163,70 @@ python -m tools.validate_excel "datasets/file.xlsx"
 # Auto-fix structure with extra column removal
 python -m tools.fix_excel_structure "datasets/file.xlsx" --remove-extra
 ```
+
+#### Performance Metrics Analysis
+
+```bash
+# Show recent execution summary
+python analyze_metrics.py summary
+
+# Generate scatter plot of duration vs rows processed
+python analyze_metrics.py scatter
+
+# Show performance trends over time
+python analyze_metrics.py trends
+
+# Generate comprehensive analysis dashboard
+python analyze_metrics.py analysis
+
+# Show detailed regression analysis
+python analyze_metrics.py regression
+
+# Generate comprehensive report
+python analyze_metrics.py report --output performance_report.txt
+
+# Export data for external analysis
+python analyze_metrics.py export --output metrics_data.csv
+```
+
+## 📊 Performance Metrics & Analysis
+
+### Execution Tracking
+
+The system automatically tracks comprehensive execution metrics for performance analysis and optimization:
+
+- **⏱️ Duration Tracking**: Processing time for each session and batch
+- **📊 Row Count Analysis**: Number of rows processed and success rates
+- **🔍 Regression Analysis**: Statistical modeling of performance patterns
+- **📈 Trend Analysis**: Performance trends over time with visualization
+
+### Metrics Analysis Tools
+
+```bash
+# Quick performance summary
+python analyze_metrics.py summary --days 7
+
+# Generate performance visualizations
+python analyze_metrics.py scatter       # Duration vs rows scatter plot
+python analyze_metrics.py trends        # Performance trends over time
+python analyze_metrics.py analysis      # Comprehensive dashboard
+
+# Statistical analysis
+python analyze_metrics.py regression    # Detailed regression analysis
+
+# Export and reporting
+python analyze_metrics.py report -o performance_report.txt
+python analyze_metrics.py export -o data_for_analysis.csv
+```
+
+### Performance Insights
+
+The metrics system provides valuable insights including:
+
+- **📐 Linear Regression Models**: Predictive models for processing time based on data size
+- **📊 R² Statistics**: Correlation strength between row count and processing duration
+- **🔮 Performance Predictions**: Estimated processing times for different data sizes
+- **📈 Trend Analysis**: Performance improvements or degradations over time
 
 ## 🧪 Testing & Quality Assurance
 
@@ -369,6 +436,8 @@ python -m tools.validate_excel --help
 - ✅ GUI interface for easy operation
 - ✅ Robust error handling and recovery
 - ✅ Session-based processing with resume capability
+- ✅ Performance metrics tracking with regression analysis
+- ✅ CLI tools for metrics visualization and reporting
 
 ### Upcoming Features 🚀
 
