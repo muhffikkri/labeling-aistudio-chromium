@@ -122,6 +122,10 @@ def main(args):
         prompt_template = load_prompt(args.prompt_file)
         if not prompt_template: return
 
+        # Log initial request statistics
+        initial_stats = browser.get_request_stats()
+        logging.info(f"🔄 Starting with request count: {initial_stats['total_requests']}")
+
         try:
             # Move start_session into its own try block
             browser.start_session("https://aistudio.google.com/")
@@ -149,6 +153,10 @@ def main(args):
             expected_count = min(len(batch_data), remaining_rows)
             
             logging.info(f"--- Processing Batch {i + 1}/{total_batches} (Size: {len(batch_data)} rows, Expected: {expected_count}) ---")
+            
+            # Log request statistics sebelum batch
+            request_stats = browser.get_request_stats()
+            logging.info(f"📊 Request statistics - Total requests: {request_stats['total_requests']}, Rate: {request_stats['requests_per_minute']:.1f} req/min")
             
             MAX_RETRIES = 3
             validated_results = None
@@ -244,8 +252,13 @@ def main(args):
         # This block is ALWAYS executed, whether script succeeds, fails, or is interrupted.
         # This ensures safe cleanup.
         logging.info("--- Starting final cleanup process ---")
+        
+        # Log final request statistics
         if browser:
+            final_stats = browser.get_request_stats()
+            logging.info(f"🔄 Final request statistics - Total: {final_stats['total_requests']}, Rate: {final_stats['requests_per_minute']:.1f} req/min")
             browser.close_session()
+        
         if failed_handler:
             failed_handler.save_to_file()
         

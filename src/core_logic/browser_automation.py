@@ -26,6 +26,10 @@ class Automation:
         self.browser = None
         self.page = None
         
+        # Request counter untuk tracking limit
+        self.request_count = 0
+        self.session_start_time = time.time()
+        
         user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36'
         
         os.makedirs(user_data_dir, exist_ok=True)
@@ -168,6 +172,45 @@ class Automation:
             logging.warning(f"Gagal mengambil screenshot {description}: {e}")
             # Tidak raise exception agar proses bisa dilanjutkan
 
+    def _increment_request_counter(self):
+        """
+        Increment request counter dan log statistik request.
+        """
+        self.request_count += 1
+        elapsed_time = time.time() - self.session_start_time
+        elapsed_minutes = elapsed_time / 60
+        requests_per_minute = self.request_count / elapsed_minutes if elapsed_minutes > 0 else 0
+        
+        logging.info(f"📊 Request #{self.request_count} | "
+                    f"Elapsed: {elapsed_minutes:.1f}m | "
+                    f"Rate: {requests_per_minute:.1f} req/min")
+        
+        # Warning untuk potensi limit
+        if self.request_count % 10 == 0:
+            logging.warning(f"⚠️ Request Counter Alert: {self.request_count} requests telah dilakukan")
+        
+        if self.request_count >= 50:
+            logging.warning(f"🚨 High Request Count: {self.request_count} requests - Monitor untuk rate limiting!")
+
+    def get_request_stats(self) -> dict:
+        """
+        Mendapatkan statistik request saat ini.
+        
+        Returns:
+            dict: Statistik request termasuk count, elapsed time, dan rate
+        """
+        elapsed_time = time.time() - self.session_start_time
+        elapsed_minutes = elapsed_time / 60
+        requests_per_minute = self.request_count / elapsed_minutes if elapsed_minutes > 0 else 0
+        
+        return {
+            'total_requests': self.request_count,
+            'elapsed_seconds': elapsed_time,
+            'elapsed_minutes': elapsed_minutes,
+            'requests_per_minute': requests_per_minute,
+            'estimated_hourly_rate': requests_per_minute * 60
+        }
+
     def start_session(self, url: str):
         """
         Menavigasi ke URL yang ditentukan dan menunggu UI utama siap.
@@ -210,6 +253,9 @@ class Automation:
         Returns:
             str | None: Teks respons mentah jika berhasil, atau None jika semua percobaan gagal.
         """
+        # Increment request counter di awal
+        self._increment_request_counter()
+        
         max_retries = 3
         for attempt in range(max_retries):
             try:
