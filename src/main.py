@@ -101,8 +101,13 @@ def main(args):
         metrics_tracker = ExecutionMetricsTracker()
         total_rows = data_handler.get_unprocessed_data_count()
         
+        # 📊 Tampilkan informasi progress awal
+        progress_info = data_handler.get_progress_info()
+        logging.info(f"📊 Progress Status: {progress_info['processed_rows']}/{progress_info['total_rows']} "
+                    f"({progress_info['progress_percentage']:.1f}%) sudah diproses")
+        
         if total_rows == 0:
-            logging.info("No data to process. Finished.")
+            logging.info("✅ Semua data sudah diproses sebelumnya. Proses selesai.")
             return
 
         # Start metrics tracking session
@@ -179,7 +184,11 @@ def main(args):
                 data_handler.update_and_save_data(validated_results, start_index=total_processed_rows)
                 total_processed_rows += len(validated_results)
                 batch_count += 1
-                logging.info(f"Progress saved. Total valid processed rows: {total_processed_rows}")
+                
+                # 🚀 INCREMENTAL SAVE - Simpan progress setelah setiap batch berhasil
+                data_handler.save_incremental_progress()
+                
+                logging.info(f"✅ Progress disimpan! Total valid processed rows: {total_processed_rows}")
                 
                 # Update metrics progress
                 if metrics_tracker:
@@ -206,15 +215,28 @@ def main(args):
                     )
     
     except KeyboardInterrupt:
-        logging.warning("Process interrupted by user (Ctrl+C).")
+        logging.warning("🛑 Process interrupted by user (Ctrl+C).")
+        # Tampilkan progress terakhir
+        if data_handler:
+            progress_info = data_handler.get_progress_info()
+            logging.info(f"📊 Progress saat dihentikan: {progress_info['processed_rows']}/{progress_info['total_rows']} "
+                        f"({progress_info['progress_percentage']:.1f}%) sudah disimpan")
+        
         # End metrics session with interrupted status
         if metrics_tracker:
             final_metrics = metrics_tracker.end_session("interrupted")
             logging.info(f"📊 Final metrics - Duration: {final_metrics.get('duration_seconds', 0):.2f}s, Processed: {total_processed_rows} rows")
     except Exception as e:
-        logging.critical(f"Fatal unhandled error occurred in main flow: {e}", exc_info=True)
-        if browser and session_log_path:
-            browser.page.screenshot(path=session_log_path / "FATAL_ERROR_screenshot.png")
+        logging.critical(f"❌ Fatal unhandled error occurred in main flow: {e}", exc_info=True)
+        
+        # Tampilkan progress terakhir sebelum error
+        if data_handler:
+            progress_info = data_handler.get_progress_info()
+            logging.info(f"📊 Progress saat error: {progress_info['processed_rows']}/{progress_info['total_rows']} "
+                        f"({progress_info['progress_percentage']:.1f}%) sudah disimpan")
+        
+        if browser:
+            browser._safe_screenshot("FATAL_ERROR_screenshot.png", "Fatal error in main flow")
         # End metrics session with failed status
         if metrics_tracker:
             metrics_tracker.end_session("failed")
@@ -226,8 +248,14 @@ def main(args):
             browser.close_session()
         if failed_handler:
             failed_handler.save_to_file()
-        if data_handler and total_processed_rows > 0:
-            data_handler.save_final_results()
+        
+        # ⚠️ IMPORTANT: Karena kita sudah menyimpan secara incremental, 
+        # kita tidak perlu memanggil save_final_results() lagi untuk menghindari duplikasi
+        # File sudah up-to-date dari incremental saves
+        if data_handler:
+            progress_info = data_handler.get_progress_info()
+            logging.info(f"✅ File hasil final tersedia di: {data_handler.output_filepath}")
+            logging.info(f"📊 Total yang berhasil disimpan: {progress_info['processed_rows']}/{progress_info['total_rows']} baris")
         
         # End metrics tracking session if still active
         if metrics_tracker and metrics_tracker.session_id:

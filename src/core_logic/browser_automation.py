@@ -147,6 +147,27 @@ class Automation:
         except Exception as e:
             logging.warning(f"Tidak dapat menerapkan teknik penyamaran: {e}", exc_info=True)
 
+    def _safe_screenshot(self, filename: str, description: str = ""):
+        """
+        Mengambil screenshot dengan error handling yang aman.
+        Jika gagal, tidak akan crash aplikasi tetapi hanya log warning.
+        
+        Args:
+            filename (str): Nama file screenshot
+            description (str): Deskripsi untuk logging
+        """
+        try:
+            if self.page and not self.page.is_closed():
+                screenshot_path = self.log_folder / filename
+                self.page.screenshot(path=screenshot_path)
+                if description:
+                    logging.debug(f"Screenshot berhasil: {description} -> {filename}")
+            else:
+                logging.warning(f"Tidak bisa screenshot {description}: Page tidak tersedia")
+        except Exception as e:
+            logging.warning(f"Gagal mengambil screenshot {description}: {e}")
+            # Tidak raise exception agar proses bisa dilanjutkan
+
     def start_session(self, url: str):
         """
         Menavigasi ke URL yang ditentukan dan menunggu UI utama siap.
@@ -164,7 +185,7 @@ class Automation:
             input_locator.wait_for(state="visible", timeout=180000) # Tunggu hingga 3 menit
             
             # Ambil screenshot tampilan awal untuk debugging
-            self.page.screenshot(path=self.log_folder / "debug_session_start.png")
+            self._safe_screenshot("debug_session_start.png", "Session start debug")
             logging.info("Aistudio siap. Kotak input utama terdeteksi.")
 
         except Exception as e:
@@ -174,10 +195,7 @@ class Automation:
             logging.critical("Pastikan Anda sudah login dan tidak ada pop-up yang menghalangi.")
             logging.critical(f"Detail Error: {e}", exc_info=True)
             
-            try:
-                self.page.screenshot(path=self.log_folder / "FATAL_ERROR_timeout.png")
-            except Exception as screenshot_error:
-                logging.error(f"Gagal mengambil screenshot error: {screenshot_error}")
+            self._safe_screenshot("FATAL_ERROR_timeout.png", "Fatal timeout error")
             
             raise TimeoutError("Gagal memulai sesi: Timeout saat menunggu elemen login.") from e
 
@@ -215,14 +233,14 @@ class Automation:
                 self.page.click(send_button_selector)
                 logging.info("Prompt dikirim. Menunggu respons dari model...")
 
-                self.page.screenshot(path=self.log_folder / f"debug_before_response_gen_attempt_{attempt+1}.png")
+                self._safe_screenshot(f"debug_before_response_gen_attempt_{attempt+1}.png", f"Before response generation attempt {attempt+1}")
 
                 # Logika penungguan dinamis
                 if not self._wait_for_generation_to_complete():
                     logging.error("Model tidak menyelesaikan generasi dalam waktu yang ditentukan.")
                     continue # Lanjut ke percobaan berikutnya
 
-                self.page.screenshot(path=self.log_folder / f"debug_after_response_gen_attempt_{attempt+1}.png")
+                self._safe_screenshot(f"debug_after_response_gen_attempt_{attempt+1}.png", f"After response generation attempt {attempt+1}")
                 time.sleep(2) # Beri waktu ekstra untuk UI render
 
                 # Logika ekstraksi respons berlapis
@@ -240,10 +258,7 @@ class Automation:
 
             except Exception as e:
                 logging.error(f"Terjadi error saat memproses batch pada percobaan #{attempt + 1}: {e}", exc_info=True)
-                try:
-                    self.page.screenshot(path=self.log_folder / f"ERROR_process_batch_attempt_{attempt+1}.png")
-                except Exception as screenshot_error:
-                    logging.error(f"Gagal mengambil screenshot error: {screenshot_error}")
+                self._safe_screenshot(f"ERROR_process_batch_attempt_{attempt+1}.png", f"Error during batch processing attempt {attempt+1}")
         
         logging.error(f"Gagal memproses batch setelah {max_retries} percobaan.")
         return None
