@@ -1,102 +1,235 @@
 # 🤖 AI Studio Auto-Labeling System
 
-A comprehensive automated text dataset labeling application that leverages Google's AI Studio platform through intelligent browser automation. This system provides robust data processing, comprehensive testing infrastructure, and powerful utility tools for production-ready text classification workflows.
+A production-ready automated text classification system that leverages Google's AI Studio platform through intelligent browser automation. Features robust error handling, comprehensive testing, and advanced monitoring capabilities.
 
 ## ✨ Key Features
 
-### Core Functionality
-
-- **🎯 Intelligent Browser Automation**: Uses Playwright with multi-tier fallback strategies for reliable AI Studio interactions
-- **📊 Batch Processing**: Configurable batch sizes with smart retry mechanisms and error handling
-- **✅ Advanced Validation**: Comprehensive response validation with automatic retry logic for failed classifications
-- **🔄 Resume Capability**: Intelligent resume functionality that continues from where it left off
-
-### Development & Production Tools
-
-- **🧪 Comprehensive Testing Suite**: 90+ test cases covering unit, integration, GUI, and browser automation testing
-- **📈 Test Logging System**: Advanced logging with JSON, XML, and HTML reports for test analysis and trending
-- **🛠️ CLI Utilities**: Production-ready tools for Excel file diagnostics, repair, and validation
+- **🎯 Intelligent Browser Automation**: Playwright-based automation with multi-tier fallback strategies
+- **📊 Batch Processing**: Configurable batch sizes with smart retry mechanisms and error recovery
+- **🔄 Resume Capability**: Incremental progress saving with automatic resume from interruptions
+- **📈 Real-time Monitoring**: API quota tracking, request rate monitoring, and performance metrics
+- **🛡️ Self-healing System**: Automatic recovery from corrupted data and error conditions
+- **🧪 Comprehensive Testing**: 90+ test cases with advanced reporting and coverage analysis
+- **🔧 CLI Utilities**: Production tools for data validation, repair, and structure fixing
 - **🎛️ GUI Interface**: User-friendly desktop interface for easy operation
-- **📝 Session-Based Logging**: Detailed execution logs with screenshots and debug artifacts for troubleshooting
-- **📊 Performance Metrics**: Comprehensive execution tracking with duration analysis, regression modeling, and visualization tools
 
-### Data Management
+## 🚀 Quick Start
 
-- **📋 Excel/CSV Support**: Robust handling of various file formats with automatic structure detection
-- **🔧 Auto-Repair Tools**: Smart file structure fixing with column mapping and validation
-- **📁 Failed Row Tracking**: Comprehensive error tracking and recovery mechanisms
-- **💾 Backup Strategy**: Automatic backups before any file modifications
+### Automated Setup (Recommended)
 
-## 🚀 Installation & Setup
-
-### Prerequisites
-
-- **Python 3.8+** (Recommended: Python 3.12)
-- **Google Chrome** (for browser automation)
-- **Windows/macOS/Linux** support
-
-### Quick Installation
-
-#### Option 1: Automated Setup (Recommended)
-
-**For Windows:**
+**Windows:**
 
 ```batch
-# Double-click setup.bat or run in Command Prompt:
 setup.bat
 ```
 
-**For macOS/Linux:**
+**macOS/Linux:**
 
 ```bash
-# Make script executable and run:
-chmod +x setup.sh
-./setup.sh
+chmod +x setup.sh && ./setup.sh
 ```
 
-#### Option 2: Manual Setup
+### Manual Installation
 
 ```bash
-# 1. Clone repository
-git clone <REPOSITORY_URL>
+# 1. Clone and navigate
+git clone <repository-url>
 cd labeling-aistudio-chromium
 
-# 2. Create virtual environment
+# 2. Setup environment
 python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
 
-# 3. Activate virtual environment
-# Windows:
-.\venv\Scripts\activate
-# macOS/Linux:
-source venv/bin/activate
-
-# 4. Install dependencies
+# 3. Install dependencies
 pip install -r requirements.txt
-
-# 5. Install testing dependencies (optional)
-pip install -r test-requirements.txt
 ```
 
-### Project Structure
+### What the Setup Scripts Do
+
+**Automated Installation Process:**
+
+1. **Python Detection**: Validates Python 3.8+ installation
+2. **Environment Setup**: Creates isolated virtual environment
+3. **Dependencies**: Installs all required packages from requirements.txt
+4. **Validation**: Verifies installation success
+5. **Launch**: Automatically starts the GUI application
+
+**Error Handling:**
+
+- Informative error messages for common issues
+- Automatic fallback path detection
+- Validation of each setup step
+- Clear instructions for manual resolution
+
+## 📖 Usage
+
+### Command Line Interface
+
+```bash
+# Basic usage
+python src/main.py --input-file "datasets/your_data.xlsx"
+
+# Custom configuration
+python src/main.py --input-file "datasets/data.xlsx" --batch-size 25 --debug
+```
+
+### GUI Interface
+
+```bash
+python src/gui.py
+```
+
+## 📁 Project Structure
 
 ```
-labeling-aistudio-chromium/
 ├── src/                    # Main application code
-│   ├── main.py            # Entry point
-│   ├── gui.py             # Desktop GUI interface
+│   ├── main.py            # CLI entry point
+│   ├── gui.py             # GUI interface
 │   └── core_logic/        # Core business logic
 ├── tests/                  # Comprehensive test suite (90+ tests)
 ├── tools/                  # CLI utilities for data management
-├── datasets/              # Input data files (.xlsx/.csv)
-├── prompts/               # AI prompts and instructions
-├── results/               # Processed output files
-├── logs/                  # Session execution logs
-├── execution_metrics/     # Performance metrics and analysis data
-├── test_logs/             # Test execution logs and reports
-└── analyze_metrics.py     # CLI tool for metrics analysis
+├── datasets/              # Input data files
+├── results/               # Processing outputs
+├── logs/                  # Execution logs with session tracking
+├── execution_metrics/     # Performance metrics and analytics
+└── prompts/               # AI prompt templates
 ```
 
-## 🏃‍♂️ Usage Guide
+## � System Capabilities
+
+### Processing Features
+
+- ✅ Excel/CSV file support with auto-detection and repair
+- ✅ Dynamic batch validation for partial batches
+- ✅ Incremental progress saving to prevent data loss
+- ✅ Smart retry logic with exponential backoff
+- ✅ Failed row tracking and recovery mechanisms
+- ✅ Automatic backup creation before processing
+
+### Monitoring & Analytics
+
+- ✅ Real-time API quota monitoring and rate limiting
+- ✅ Request statistics tracking (count, rate, estimated usage)
+- ✅ Performance metrics with historical analysis
+- ✅ Session-based logging with debug artifacts
+- ✅ Comprehensive error reporting and recovery tools
+
+### Quality Assurance
+
+- ✅ 90+ automated test cases covering all functionality
+- ✅ Advanced test reporting (HTML, XML, JSON formats)
+- ✅ Continuous integration ready with pytest configuration
+- ✅ Code coverage analysis and reporting
+- ✅ Mock data and fixture management for reliable testing
+
+## 🔧 Advanced Features
+
+### Error Recovery
+
+- **JSON Metrics Recovery**: Automatic detection and repair of corrupted metrics files
+- **Browser Crash Recovery**: Safe screenshot handling with fallback mechanisms
+- **Process Interruption**: Resume from exact point of interruption with data integrity
+- **File Corruption**: Atomic write operations prevent data corruption
+
+### Performance Optimization
+
+- **Request Rate Management**: Real-time monitoring prevents quota exhaustion
+- **Memory Efficiency**: Optimized batch processing for large datasets
+- **Resource Cleanup**: Automatic cleanup of temporary files and browser sessions
+- **Concurrent Processing**: Safe parallel operations where applicable
+
+## 📊 Monitoring Dashboard
+
+Track processing progress and system health:
+
+- Request rate and quota usage
+- Processing success/failure rates
+- Session duration and performance metrics
+- Error tracking and resolution status
+- Historical trends and regression analysis
+
+## 🧪 Testing & Validation
+
+```bash
+# Run full test suite
+python -m pytest tests/ -v --html=reports/test_report.html
+
+# Run specific test categories
+python -m pytest tests/test_core_logic.py -v
+python -m pytest tests/test_browser_automation.py -v
+
+# Run with coverage analysis
+python -m pytest tests/ --cov=src --cov-report=html
+```
+
+## 🛠️ CLI Utilities
+
+Validate and repair data files:
+
+```bash
+# Validate Excel/CSV structure
+python tools/validate_excel.py datasets/your_file.xlsx
+
+# Fix structural issues
+python tools/fix_excel_structure.py datasets/your_file.xlsx
+
+# Recover corrupted metrics
+python recover_metrics.py
+```
+
+## 📈 Recent Improvements
+
+### System Reliability
+
+- **Self-healing JSON metrics** with automatic corruption recovery
+- **Incremental save system** prevents data loss on interruption
+- **Enhanced error handling** with comprehensive recovery mechanisms
+- **Test organization** following Python best practices
+
+### Monitoring Enhancements
+
+- **Request counter system** for API quota management
+- **Real-time rate monitoring** with usage predictions
+- **Performance metrics tracking** with historical analysis
+- **Comprehensive logging** with session-based organization
+
+## 📚 Documentation
+
+- **[USER_GUIDE.md](USER_GUIDE.md)**: Complete usage, debugging, and testing guide
+- **[CHANGELOG.md](CHANGELOG.md)**: Detailed history of improvements and fixes
+- **[tools/README.md](tools/README.md)**: CLI utilities documentation
+
+## 🆘 Troubleshooting
+
+### Common Issues
+
+1. **Browser automation**: Check Chrome installation and clear browser data
+2. **File processing**: Use validation tools to check data structure
+3. **API connection**: Verify Google AI Studio access and quota
+4. **Memory issues**: Reduce batch size for large datasets
+
+### Recovery Tools
+
+- `python recover_metrics.py` - Fix corrupted metrics data
+- `python tools/validate_excel.py` - Validate input file structure
+- `python -m pytest tests/` - Verify system integrity
+- Check `logs/` folder for detailed error information
+
+## 🎯 Production Ready
+
+This system is designed for production use with:
+
+- **Robust error handling** and automatic recovery
+- **Comprehensive testing** with 90+ automated test cases
+- **Performance monitoring** and quota management
+- **Data integrity protection** with incremental saves
+- **Professional logging** and debugging capabilities
+
+---
+
+**🚀 Ready to automate your text classification workflow? Get started with the setup guide above!**
+
+For detailed usage instructions, see **[USER_GUIDE.md](USER_GUIDE.md)**
 
 ### Basic Usage
 
