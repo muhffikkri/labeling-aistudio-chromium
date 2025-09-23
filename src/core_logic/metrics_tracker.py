@@ -149,19 +149,40 @@ class ExecutionMetricsTracker:
     def _save_to_json(self):
         """Save metrics to JSON file for detailed analysis."""
         try:
-            # Load existing data
+            # Load existing data with corruption recovery
+            data = {"executions": []}
             if self.json_file.exists():
-                with open(self.json_file, 'r', encoding='utf-8', errors='replace') as f:
-                    data = json.load(f)
-            else:
-                data = {"executions": []}
+                try:
+                    with open(self.json_file, 'r', encoding='utf-8', errors='replace') as f:
+                        data = json.load(f)
+                except json.JSONDecodeError as json_err:
+                    self.logger.warning(f"JSON file corrupted (char {json_err.pos}): {json_err.msg}")
+                    self.logger.info("Creating backup and starting with fresh JSON file")
+                    
+                    # Create backup of corrupted file
+                    backup_file = self.json_file.with_suffix('.json.backup')
+                    try:
+                        backup_file.write_bytes(self.json_file.read_bytes())
+                        self.logger.info(f"Corrupted file backed up to: {backup_file}")
+                    except Exception as backup_err:
+                        self.logger.warning(f"Could not create backup: {backup_err}")
+                    
+                    # Start with fresh data structure
+                    data = {"executions": []}
+                except Exception as read_err:
+                    self.logger.warning(f"Could not read JSON file: {read_err}")
+                    data = {"executions": []}
             
             # Add current session
             data["executions"].append(self.session_data)
             
-            # Save back to file
-            with open(self.json_file, 'w', encoding='utf-8', errors='replace') as f:
+            # Save back to file with atomic write
+            temp_file = self.json_file.with_suffix('.json.tmp')
+            with open(temp_file, 'w', encoding='utf-8', errors='replace') as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
+            
+            # Atomic rename to prevent corruption during write
+            temp_file.replace(self.json_file)
                 
         except Exception as e:
             self.logger.error(f"Failed to save JSON metrics: {e}")
@@ -209,8 +230,13 @@ class ExecutionMetricsTracker:
             if not self.json_file.exists():
                 return {"error": "No metrics data available"}
             
-            with open(self.json_file, 'r', encoding='utf-8', errors='replace') as f:
-                data = json.load(f)
+            try:
+                with open(self.json_file, 'r', encoding='utf-8', errors='replace') as f:
+                    data = json.load(f)
+            except json.JSONDecodeError as json_err:
+                self.logger.warning(f"JSON metrics file corrupted, attempting to read CSV fallback")
+                # Try to read from CSV as fallback
+                return {"error": f"JSON file corrupted: {json_err.msg}", "recommendation": "Check CSV file for data"}
             
             executions = data.get("executions", [])
             if not executions:
