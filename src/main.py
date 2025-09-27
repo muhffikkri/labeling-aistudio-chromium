@@ -4,14 +4,13 @@ from pathlib import Path
 import time
 from datetime import datetime
 
-# Impor komponen inti dari folder core_logic
-# Pastikan Anda sudah memindahkan dan merefaktor file-file ini
+# Impor komponen inti dari folder core_logic dan metrics
 try:
     from core_logic.data_handler import DataHandler
     from core_logic.browser_automation import Automation
     from core_logic.failed_row_handler import FailedRowHandler
     from core_logic.validation import parse_and_validate
-    from core_logic.metrics_tracker import ExecutionMetricsTracker
+    from metrics.metrics_tracker import ExecutionMetricsTracker
 except ImportError as e:
     import os
     import sys
@@ -24,7 +23,7 @@ except ImportError as e:
         from core_logic.browser_automation import Automation
         from core_logic.failed_row_handler import FailedRowHandler
         from core_logic.validation import parse_and_validate
-        from core_logic.metrics_tracker import ExecutionMetricsTracker
+        from metrics.metrics_tracker import ExecutionMetricsTracker
     except ImportError:
         if os.getenv("TESTING") != "1":  # Only exit if not in testing mode
             print("CRITICAL ERROR: Pastikan semua file modul (data_handler, browser_automation, dll.) berada di dalam folder 'src/core_logic/'")

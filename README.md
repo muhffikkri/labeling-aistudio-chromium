@@ -322,44 +322,34 @@ python analyze_metrics.py report --output performance_report.txt
 python analyze_metrics.py export --output metrics_data.csv
 ```
 
-## 📊 Performance Metrics & Analysis
+## 📊 Metrics Analysis
 
-### Execution Tracking
+The system automatically tracks execution metrics for performance monitoring and optimization.
 
-The system automatically tracks comprehensive execution metrics for performance analysis and optimization:
-
-- **⏱️ Duration Tracking**: Processing time for each session and batch
-- **📊 Row Count Analysis**: Number of rows processed and success rates
-- **🔍 Regression Analysis**: Statistical modeling of performance patterns
-- **📈 Trend Analysis**: Performance trends over time with visualization
-
-### Metrics Analysis Tools
+### Quick Commands
 
 ```bash
-# Quick performance summary
-python analyze_metrics.py summary --days 7
+# Performance summary
+python src/metrics_cli.py summary              # Last 30 days
+python src/metrics_cli.py summary --days 7     # Last 7 days
 
-# Generate performance visualizations
-python analyze_metrics.py scatter       # Duration vs rows scatter plot
-python analyze_metrics.py trends        # Performance trends over time
-python analyze_metrics.py analysis      # Comprehensive dashboard
+# Visualizations
+python src/metrics_cli.py visualize            # Scatter plot (duration vs rows)
+python src/metrics_cli.py trends               # Performance trends over time
 
-# Statistical analysis
-python analyze_metrics.py regression    # Detailed regression analysis
+# Data export
+python src/metrics_cli.py export               # Export to CSV
+python src/metrics_cli.py export --output report.csv
 
-# Export and reporting
-python analyze_metrics.py report -o performance_report.txt
-python analyze_metrics.py export -o data_for_analysis.csv
+# Complete analysis
+python src/metrics_cli.py all                  # Summary + visualizations + export
 ```
 
-### Performance Insights
+### Metrics Files
 
-The metrics system provides valuable insights including:
-
-- **📐 Linear Regression Models**: Predictive models for processing time based on data size
-- **📊 R² Statistics**: Correlation strength between row count and processing duration
-- **🔮 Performance Predictions**: Estimated processing times for different data sizes
-- **📈 Trend Analysis**: Performance improvements or degradations over time
+- `execution_metrics/execution_metrics.csv` - Raw data
+- `execution_metrics/visualizations/` - Generated plots
+- Automatic tracking during processing
 
 ## 🧪 Testing & Quality Assurance
 
